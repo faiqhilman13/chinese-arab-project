@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { LanguageCode } from "@prisma/client";
-import { parseArabicForm, resolveArabicTarget } from "@/lib/arabic-forms";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ensure, handleRouteError } from "@/lib/http";
@@ -25,36 +23,15 @@ export async function GET(request: NextRequest) {
         scriptText: true,
         vowelledText: true,
         transliteration: true,
-        lexicalVariants: {
-          select: {
-            register: true,
-            scriptText: true,
-            transliteration: true,
-          },
-        },
       },
     });
 
     ensure(lexicalItem, 404, "ITEM_NOT_FOUND", "Lexical item does not exist.");
-    const requestedForm = parseArabicForm(input.form);
-    const target = resolveArabicTarget({
-      language: lexicalItem.language,
-      requestedForm,
-      scriptText: lexicalItem.scriptText,
-      transliteration: lexicalItem.transliteration,
-      lexicalVariants: lexicalItem.lexicalVariants,
-    });
-    const synthesisText =
-      target.form === "msa" &&
-      lexicalItem.language === LanguageCode.AR_MSA &&
-      lexicalItem.vowelledText
-        ? lexicalItem.vowelledText
-        : target.scriptText;
 
     const result = await synthesizeWithLocalService({
       language: lexicalItem.language,
-      text: synthesisText,
-      transliteration: target.transliteration,
+      text: lexicalItem.vowelledText ?? lexicalItem.scriptText,
+      transliteration: lexicalItem.transliteration,
     });
 
     return new NextResponse(result.audio, {

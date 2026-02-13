@@ -44,15 +44,43 @@ enum SchedulerVersion {
   FSRS
 }
 
+enum ArabicRegister {
+  MSA
+  SYRIAN
+}
+
+enum ImmersionMode {
+  INPUT
+  OUTPUT
+  STUDY
+  TUTOR
+}
+
+enum SnippetKind {
+  SENTENCE
+  DIALOGUE
+  NEWS_LINE
+}
+
+enum SnippetRegister {
+  MSA
+  SYRIAN
+  MIXED
+}
+
 model User {
   id                    String                 @id @default(cuid())
   email                 String                 @unique
   passwordHash          String
+  immersionLogs         ImmersionLog[]
+  snippetInteractions   SnippetInteraction[]
+  morphologyAttempts    MorphologyAttempt[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   reviewCards           ReviewCard[]
   attemptLogs           AttemptLog[]
   pronunciationAttempts PronunciationAttempt[]
+  noHarakatAttempts     NoHarakatAttempt[]
   dailySessions         DailySession[]
   reminderPref          ReminderPref?
 }
@@ -69,10 +97,12 @@ model PatternNote {
 
 model LexicalItem {
   id                    String                 @id @default(cuid())
+  conceptKey            String                 @unique @default(cuid())
   language              LanguageCode
   domain                String
   itemType              ItemType
   scriptText            String
+  vowelledText          String?
   transliteration       String?
   gloss                 String
   audioUrl              String?
@@ -81,14 +111,34 @@ model LexicalItem {
   patternNoteId         String?
   patternNote           PatternNote?           @relation(fields: [patternNoteId], references: [id], onDelete: SetNull)
   lessonItems           LessonItem[]
+  lexicalVariants       LexicalVariant[]
   reviewCards           ReviewCard[]
   attemptLogs           AttemptLog[]
   pronunciationAttempts PronunciationAttempt[]
+  noHarakatAttempts     NoHarakatAttempt[]
+  snippetLinks          SnippetLexicalLink[]
+  morphologyEntries     MorphologyEntry[]
+  morphologyAttempts    MorphologyAttempt[]
   generatedVariants     GeneratedVariant[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 
   @@index([language, domain])
+}
+
+model LexicalVariant {
+  id             String        @id @default(cuid())
+  lexicalItemId  String
+  register       ArabicRegister
+  scriptText     String
+  transliteration String?
+  isPrimary      Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  lexicalItem    LexicalItem   @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+
+  @@unique([lexicalItemId, register])
+  @@index([register, scriptText])
 }
 
 model Lesson {
@@ -173,6 +223,29 @@ model PronunciationAttempt {
   @@index([userId, createdAt])
 }
 
+model NoHarakatAttempt {
+  id                      String        @id @default(cuid())
+  userId                  String
+  lexicalItemId           String
+  predictedTransliteration String
+  expectedTransliteration String
+  displayText             String
+  vowelledText            String
+  transcript              String
+  score                   Int
+  confidence              String
+  feedback                String
+  components              Json?
+  tipCodes                Json
+  form                    ArabicRegister @default(MSA)
+  createdAt               DateTime      @default(now())
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lexicalItem             LexicalItem   @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, lexicalItemId, createdAt])
+}
+
 model DailySession {
   id             String       @id @default(cuid())
   userId         String
@@ -209,4 +282,108 @@ model GeneratedVariant {
   lexicalItem   LexicalItem  @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
 
   @@index([lexicalItemId, createdAt])
+}
+
+model ImmersionLog {
+  id         String        @id @default(cuid())
+  userId     String
+  language   LanguageCode
+  mode       ImmersionMode
+  minutes    Int
+  source     String?
+  notes      String?
+  occurredAt DateTime      @default(now())
+  createdAt  DateTime      @default(now())
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, language, occurredAt])
+  @@index([userId, createdAt])
+}
+
+model Snippet {
+  id           String              @id @default(cuid())
+  language     LanguageCode
+  kind         SnippetKind
+  register     SnippetRegister
+  domain       String
+  phaseMin     Int                 @default(1)
+  phaseMax     Int                 @default(4)
+  difficulty   Int                 @default(1)
+  scriptText   String
+  vowelledText String?
+  transliteration String?
+  gloss        String
+  audioUrl     String?
+  sourceLabel  String
+  isActive     Boolean             @default(true)
+  links        SnippetLexicalLink[]
+  interactions SnippetInteraction[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([language, domain, phaseMin, phaseMax])
+  @@index([language, isActive, createdAt])
+}
+
+model SnippetLexicalLink {
+  snippetId     String
+  lexicalItemId String
+  tokenText     String?
+  position      Int?
+  snippet       Snippet     @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  lexicalItem   LexicalItem @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+
+  @@id([snippetId, lexicalItemId])
+  @@index([lexicalItemId])
+}
+
+model SnippetInteraction {
+  id              String   @id @default(cuid())
+  userId          String
+  snippetId       String
+  comprehension   Int?
+  minedCount      Int      @default(0)
+  consumedMinutes Int      @default(0)
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snippet         Snippet  @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, snippetId, createdAt])
+}
+
+model MorphologyEntry {
+  id            String        @id @default(cuid())
+  lexicalItemId String
+  root          String
+  wazn          String
+  pos           String?
+  lemma         String?
+  register      ArabicRegister @default(MSA)
+  confidence    Int           @default(60)
+  lexicalItem   LexicalItem   @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([lexicalItemId, register])
+  @@index([root, wazn])
+}
+
+model MorphologyAttempt {
+  id             String      @id @default(cuid())
+  userId         String
+  lexicalItemId  String
+  promptType     String
+  userAnswer     String
+  expectedAnswer String
+  isCorrect      Boolean
+  score          Int
+  root           String?
+  wazn           String?
+  createdAt      DateTime    @default(now())
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lexicalItem    LexicalItem @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, lexicalItemId, createdAt])
 }

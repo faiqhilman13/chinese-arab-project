@@ -1,5 +1,6 @@
 import { ItemType, type Prisma } from "@prisma/client";
 import { NextRequest } from "next/server";
+import { buildArabicForms } from "@/lib/arabic-forms";
 import { requireUser } from "@/lib/auth";
 import { DOMAIN_ORDER } from "@/lib/constants";
 import { db } from "@/lib/db";
@@ -16,6 +17,8 @@ export async function GET(request: NextRequest) {
       domain: request.nextUrl.searchParams.get("domain") ?? undefined,
       search: request.nextUrl.searchParams.get("search") ?? undefined,
       limit: request.nextUrl.searchParams.get("limit") ?? undefined,
+      page: request.nextUrl.searchParams.get("page") ?? undefined,
+      pageSize: request.nextUrl.searchParams.get("pageSize") ?? undefined,
     });
 
     const where: Prisma.LexicalItemWhereInput = {
@@ -43,22 +46,69 @@ export async function GET(request: NextRequest) {
             contains: input.search,
           },
         },
+        {
+          lexicalVariants: {
+            some: {
+              scriptText: {
+                contains: input.search,
+              },
+            },
+          },
+        },
+        {
+          lexicalVariants: {
+            some: {
+              transliteration: {
+                contains: input.search,
+              },
+            },
+          },
+        },
       ];
     }
 
-    const items = await db.lexicalItem.findMany({
-      where,
-      orderBy: [{ domain: "asc" }, { createdAt: "asc" }],
-      take: input.limit,
-      select: {
-        id: true,
-        domain: true,
-        itemType: true,
-        scriptText: true,
-        transliteration: true,
-        gloss: true,
-      },
-    });
+    const isLegacyLimitQuery = typeof input.limit === "number";
+    const pageSize = input.limit ?? input.pageSize;
+    const page = isLegacyLimitQuery ? 1 : input.page;
+    const skip = isLegacyLimitQuery ? 0 : (page - 1) * pageSize;
+
+    const [totalMatching, items, distinctDomains] = await Promise.all([
+      db.lexicalItem.count({ where }),
+      db.lexicalItem.findMany({
+        where,
+        orderBy: [{ domain: "asc" }, { createdAt: "asc" }],
+        skip,
+        take: pageSize,
+        select: {
+          id: true,
+          domain: true,
+          itemType: true,
+          scriptText: true,
+          transliteration: true,
+          gloss: true,
+          language: true,
+          lexicalVariants: {
+            select: {
+              register: true,
+              scriptText: true,
+              transliteration: true,
+            },
+          },
+        },
+      }),
+      db.lexicalItem.findMany({
+        where: {
+          language: API_LANGUAGE_TO_DB[input.language],
+          itemType: {
+            in: [ItemType.VOCAB, ItemType.CHUNK],
+          },
+        },
+        distinct: ["domain"],
+        select: {
+          domain: true,
+        },
+      }),
+    ]);
 
     const grouped = new Map<
       string,
@@ -68,17 +118,34 @@ export async function GET(request: NextRequest) {
         scriptText: string;
         transliteration: string | null;
         gloss: string;
+        forms: {
+          primary: {
+            scriptText: string;
+            transliteration: string | null;
+          };
+          secondary: {
+            scriptText: string;
+            transliteration: string | null;
+          } | null;
+        } | null;
       }>
     >();
 
     for (const item of items) {
       const current = grouped.get(item.domain) ?? [];
+      const forms = buildArabicForms({
+        language: item.language,
+        scriptText: item.scriptText,
+        transliteration: item.transliteration,
+        lexicalVariants: item.lexicalVariants,
+      });
       current.push({
         lexicalItemId: item.id,
         itemType: item.itemType === ItemType.VOCAB ? "vocab" : "chunk",
         scriptText: item.scriptText,
         transliteration: item.transliteration,
         gloss: item.gloss,
+        forms,
       });
       grouped.set(item.domain, current);
     }
@@ -96,9 +163,32 @@ export async function GET(request: NextRequest) {
       return a.localeCompare(b);
     });
 
+    const availableDomains = distinctDomains
+      .map((entry) => entry.domain)
+      .sort((a, b) => {
+        const leftIndex = DOMAIN_ORDER.indexOf(a as (typeof DOMAIN_ORDER)[number]);
+        const rightIndex = DOMAIN_ORDER.indexOf(b as (typeof DOMAIN_ORDER)[number]);
+        const normalizedLeft = leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex;
+        const normalizedRight = rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex;
+
+        if (normalizedLeft !== normalizedRight) {
+          return normalizedLeft - normalizedRight;
+        }
+
+        return a.localeCompare(b);
+      });
+
+    const totalPages = Math.max(1, Math.ceil(totalMatching / pageSize));
+    const hasNextPage = page < totalPages;
+
     return ok({
       language: input.language,
-      total: items.length,
+      total: totalMatching,
+      page,
+      pageSize,
+      totalPages,
+      hasNextPage,
+      availableDomains,
       domains: sortedDomains.map((domain) => {
         const domainItems = grouped.get(domain) ?? [];
         return {

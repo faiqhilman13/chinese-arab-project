@@ -1,0 +1,32 @@
+graph LR
+  subgraph FE[Frontend]
+    P1["/ar page"]
+    P2["/zh page"]
+    LW["LanguageWorkspace client"]
+    BROWSER["Browser Audio APIs"]
+  end
+
+  subgraph API[App and API Layer]
+    CORE["Core APIs"]
+    AR["Arabic APIs"]
+    LIB["Domain libraries"]
+  end
+
+  subgraph DATA[Data and Services]
+    PRISMA["Prisma Client"]
+    DB["SQLite dev.db"]
+    SPEECH["speech-service FastAPI"]
+    MODELS["Whisper + TTS models"]
+  end
+
+  P1 --> LW
+  P2 --> LW
+  LW --> CORE
+  LW --> AR
+  LW --> BROWSER
+  CORE --> LIB
+  AR --> LIB
+  LIB --> PRISMA
+  PRISMA --> DB
+  AR --> SPEECH
+  SPEECH --> MODELS

@@ -1,4 +1,4 @@
-import { LanguageCode, ReviewGrade, SkillType } from "@prisma/client";
+import { ImmersionMode, LanguageCode, ReviewGrade, SkillType } from "@prisma/client";
 
 export const API_LANGUAGE_TO_DB = {
   ar_msa: LanguageCode.AR_MSA,
@@ -29,3 +29,19 @@ export const API_GRADE_TO_DB = {
 } as const;
 
 export type ApiGrade = keyof typeof API_GRADE_TO_DB;
+
+export const API_IMMERSION_MODE_TO_DB = {
+  input: ImmersionMode.INPUT,
+  output: ImmersionMode.OUTPUT,
+  study: ImmersionMode.STUDY,
+  tutor: ImmersionMode.TUTOR,
+} as const;
+
+export type ApiImmersionMode = keyof typeof API_IMMERSION_MODE_TO_DB;
+
+export const DB_IMMERSION_MODE_TO_API: Record<ImmersionMode, ApiImmersionMode> = {
+  [ImmersionMode.INPUT]: "input",
+  [ImmersionMode.OUTPUT]: "output",
+  [ImmersionMode.STUDY]: "study",
+  [ImmersionMode.TUTOR]: "tutor",
+};

@@ -1,0 +1,67 @@
+## tasks completed
+
+- Implemented Arabic Immersion Tracker (phase-aware, ratio-based):
+  - Added Arabic phase logic utility (`phase_1`..`phase_4`) with target mode ratios and adherence scoring.
+  - Added immersion APIs:
+    - `GET /api/immersion/plan`
+    - `POST /api/immersion/log`
+    - `GET /api/immersion/summary`
+  - Added quick-log actions and weekly adherence display in `/ar`.
+- Implemented Sentence Mining with curated internal snippets:
+  - Added snippet data model (`Snippet`, `SnippetLexicalLink`, `SnippetInteraction`).
+  - Added snippet APIs:
+    - `GET /api/snippets/feed` (phase/domain/search pagination)
+    - `POST /api/snippets/interaction`
+    - `POST /api/snippets/mine` (upserts selected terms into review cards)
+  - Added Sentence Mining UI section with:
+    - domain + search filters
+    - selectable linked terms
+    - mine-to-deck workflow
+    - pagination controls
+- Implemented Morphology Trainer:
+  - Added morphology models (`MorphologyEntry`, `MorphologyAttempt`).
+  - Added morphology APIs:
+    - `GET /api/morphology/queue`
+    - `POST /api/morphology/attempt`
+    - `GET /api/morphology/summary`
+  - Added Morphology Lab UI section for root/wazn drills + confusion summary.
+- Extended seed pipeline to auto-populate new Arabic learning assets:
+  - Rebuilds Arabic snippets from chunk concepts + linked lexical items.
+  - Generates initial morphology entries from Arabic vocab with heuristic `root` and `wazn` inference.
+  - Seed result after run:
+    - Snippets: 400
+    - Morphology entries: 185
+- Added feature flags for staged rollout:
+  - `NEXT_PUBLIC_ENABLE_AR_IMMERSION_TRACKER`
+  - `NEXT_PUBLIC_ENABLE_AR_SNIPPET_MINING`
+  - `NEXT_PUBLIC_ENABLE_AR_MORPHOLOGY_TRAINER`
+- Verification completed:
+  - `npm run db:generate` (pass)
+  - `npm run db:migrate` (pass; applied `20260213203000_add_immersion_snippets_morphology`)
+  - `npm run db:seed` (pass)
+  - `npm run typecheck` (pass)
+  - `npm run lint` (pass)
+  - `npm run build` (pass)
+
+## files edited/created
+
+- Updated: `prisma/schema.prisma` (new enums/models for immersion/snippets/morphology)
+- Updated: `prisma/seed.ts` (Arabic snippet + morphology generation during seed)
+- Created: `prisma/migrations/20260213203000_add_immersion_snippets_morphology/migration.sql`
+- Created: `src/lib/arabic-immersion.ts`
+- Created: `src/lib/immersion.ts`
+- Created: `src/lib/arabic-morphology.ts`
+- Updated: `src/lib/constants.ts` (new Arabic feature flags)
+- Updated: `src/lib/mappers.ts` (immersion mode API/DB mapping)
+- Updated: `src/lib/schemas.ts` (new API schemas for immersion/snippets/morphology)
+- Created: `src/app/api/immersion/plan/route.ts`
+- Created: `src/app/api/immersion/log/route.ts`
+- Created: `src/app/api/immersion/summary/route.ts`
+- Created: `src/app/api/snippets/feed/route.ts`
+- Created: `src/app/api/snippets/interaction/route.ts`
+- Created: `src/app/api/snippets/mine/route.ts`
+- Created: `src/app/api/morphology/queue/route.ts`
+- Created: `src/app/api/morphology/attempt/route.ts`
+- Created: `src/app/api/morphology/summary/route.ts`
+- Updated: `src/components/language-workspace.tsx` (Immersion Tracker, Sentence Mining, Morphology Lab UI + wiring)
+- Updated: `docs/sessions/session3.md`

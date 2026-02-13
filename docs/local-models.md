@@ -41,12 +41,16 @@ This keeps transcript scoring from being biased toward expected answers.
 
 ## Runtime Topology
 
-1. Browser records utterance and posts multipart form to `POST /api/pronunciation/evaluate`.
+1. Browser records utterance and posts multipart form to `POST /api/pronunciation/evaluate` with `form=msa|syrian`.
 2. Next.js route validates auth/limits and resolves lexical target.
 3. Route calls local speech worker `POST /score`.
 4. Worker returns `{ transcript, score, feedback, confidence, components }`.
 5. Next.js stores attempt and returns response to UI.
-6. For target audio: `GET /api/pronunciation/target-audio` -> worker `POST /synthesize`.
+6. For target audio: `GET /api/pronunciation/target-audio?form=msa|syrian` -> worker `POST /synthesize`.
+7. No-harakat coach uses:
+   - `GET /api/pronunciation/no-harakat/queue`
+   - `POST /api/pronunciation/no-harakat/attempt`
+   - `GET /api/pronunciation/no-harakat/summary`
 
 ## Required Environment Variables
 

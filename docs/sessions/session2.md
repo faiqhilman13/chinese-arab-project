@@ -1,0 +1,77 @@
+## tasks completed
+
+- Implemented Arabic MSA/Syrian concept-form support end-to-end:
+  - Added `ArabicRegister` enum and `LexicalVariant` model.
+  - Added `LexicalItem.conceptKey` and migration backfill for existing rows.
+  - Updated API payloads and UI to expose Arabic primary/secondary forms.
+- Added Arabic form-aware pronunciation flow:
+  - `form=msa|syrian` support in `target-audio` and `evaluate` APIs.
+  - UI controls for `Play MSA`, `Play Syrian`, `Speak MSA`, and `Speak Syrian`.
+- Refactored seed pipeline to be idempotent and concept-key based.
+- Fixed seed collision bug where fallback matching by `scriptText` merged distinct concepts.
+- Implemented phase 2 Arabic content rollout:
+  - Added deterministic generator `scripts/generate-ar-dataset.mjs`.
+  - Generated `data/ar_8020_msa_syrian.v1.json` version `2.0.0` with 800 concepts.
+  - Dataset balance: 400 vocab + 400 chunks, 8 domains, 80 lessons (10 concepts per lesson).
+- Strengthened dataset validation rules in `scripts/validate-ar-dataset.mjs`:
+  - Enforces target concept count and mix from profile.
+  - Enforces per-domain and per-item-type balance.
+  - Enforces equal lesson size and exact one-time lesson coverage per concept.
+- Made Arabic seed authoritative to dataset:
+  - Removes stale Arabic lexical items not present in dataset.
+  - Rebuilds Arabic lessons to prevent stale lesson drift.
+- Updated docs and scripts for dataset generation and validation.
+- Implemented Arabic no-harakat pronunciation coach:
+  - Added `LexicalItem.vowelledText` and `NoHarakatAttempt` model.
+  - Added no-harakat APIs for queue, attempt, summary, and target audio.
+  - Added Arabic UI section on `/ar` for predict transliteration -> speak -> reveal harakat + coaching tips.
+  - Added rule-based no-harakat tip engine and confusion pattern summary.
+- Added Arabic pronunciation enrichment workflow:
+  - `npm run data:enrich:ar` + `data/ar_pronunciation_overrides.json`.
+  - Dataset now includes `msa.vowelledText` and transliterations for all concepts.
+- Improved Arabic vocabulary gallery performance:
+  - Added server-side pagination support (`page`, `pageSize`, legacy `limit`) in gallery API.
+  - Added pagination metadata in API response (`total`, `totalPages`, `hasNextPage`, `page`, `pageSize`).
+  - Added debounced search + page navigation controls in UI to reduce initial render/load pressure.
+  - Added `availableDomains` API metadata so domain filters are backend-driven.
+- Verification completed:
+  - `npm run data:generate:ar` (pass)
+  - `npm run data:enrich:ar` (pass)
+  - `npm run data:validate:ar` (pass)
+  - `npm run db:migrate` (pass)
+  - `npm run db:seed` (pass; Arabic concepts now 800)
+  - `npm run typecheck` (pass)
+  - `npm run lint` (pass)
+  - `npm run build` (pass)
+
+## files edited/created
+
+- Updated: `README.md`
+- Updated: `docs/local-models.md`
+- Updated: `package.json`
+- Updated: `prisma/schema.prisma`
+- Updated: `prisma/seed.ts`
+- Created: `prisma/migrations/20260213114251_add_no_harakat_drill/migration.sql`
+- Created: `prisma/migrations/20260213115130_backfill_arabic_vowelled_text/migration.sql`
+- Updated: `src/app/api/lesson/[id]/route.ts`
+- Updated: `src/app/api/pronunciation/evaluate/route.ts`
+- Updated: `src/app/api/pronunciation/target-audio/route.ts`
+- Created: `src/app/api/pronunciation/no-harakat/queue/route.ts`
+- Created: `src/app/api/pronunciation/no-harakat/attempt/route.ts`
+- Created: `src/app/api/pronunciation/no-harakat/summary/route.ts`
+- Created: `src/app/api/pronunciation/no-harakat/target-audio/route.ts`
+- Updated: `src/app/api/review/flashcards/route.ts`
+- Updated: `src/app/api/vocabulary/gallery/route.ts` (server-side pagination + metadata)
+- Updated: `src/components/language-workspace.tsx` (debounced search + paginated gallery UI)
+- Updated: `src/lib/schemas.ts` (gallery `page`/`pageSize` query validation)
+- Created: `src/lib/arabic-no-harakat.ts`
+- Created: `src/lib/arabic-no-harakat-tips.ts`
+- Created: `src/lib/arabic-forms.ts`
+- Created: `prisma/migrations/20260213105020_add_arabic_lexical_variants/migration.sql`
+- Updated: `data/ar_8020_msa_syrian.v1.json`
+- Created: `data/ar_pronunciation_overrides.json`
+- Created: `scripts/generate-ar-dataset.mjs`
+- Created: `scripts/enrich-ar-pronunciation-fields.mjs`
+- Updated: `scripts/validate-ar-dataset.mjs`
+- Updated: `scripts/speech-dev.mjs` (port-in-use reuse logic for existing healthy speech service)
+- Updated: `docs/sessions/session2.md`

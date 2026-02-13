@@ -1,5 +1,6 @@
 import { ItemType, type ReviewState } from "@prisma/client";
 import { NextRequest } from "next/server";
+import { buildArabicForms } from "@/lib/arabic-forms";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { handleRouteError, ok } from "@/lib/http";
@@ -19,6 +20,16 @@ type FlashcardRow = {
   isDue: boolean;
   schedulerVersion: "legacy" | "fsrs" | null;
   transliterationStage: number;
+  forms: {
+    primary: {
+      scriptText: string;
+      transliteration: string | null;
+    };
+    secondary: {
+      scriptText: string;
+      transliteration: string | null;
+    } | null;
+  } | null;
 };
 
 type SortableFlashcard = FlashcardRow & {
@@ -53,6 +64,13 @@ export async function GET(request: NextRequest) {
       },
       orderBy: [{ domain: "asc" }, { createdAt: "asc" }],
       include: {
+        lexicalVariants: {
+          select: {
+            register: true,
+            scriptText: true,
+            transliteration: true,
+          },
+        },
         reviewCards: {
           where: {
             userId: user.id,
@@ -79,6 +97,12 @@ export async function GET(request: NextRequest) {
       const schedulerVersion = card
         ? (card.schedulerVersion.toLowerCase() as "legacy" | "fsrs")
         : null;
+      const forms = buildArabicForms({
+        language: item.language,
+        scriptText: item.scriptText,
+        transliteration: item.transliteration,
+        lexicalVariants: item.lexicalVariants,
+      });
 
       return {
         lexicalItemId: item.id,
@@ -93,6 +117,7 @@ export async function GET(request: NextRequest) {
         isDue,
         schedulerVersion,
         transliterationStage: card?.transliterationStage ?? 1,
+        forms,
         createdAt: item.createdAt,
         dueAtDate,
       };
@@ -145,6 +170,7 @@ export async function GET(request: NextRequest) {
         isDue: card.isDue,
         schedulerVersion: card.schedulerVersion ?? null,
         transliterationStage: card.transliterationStage,
+        forms: card.forms,
       })),
     });
   } catch (error) {

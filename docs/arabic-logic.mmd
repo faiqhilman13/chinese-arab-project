@@ -1,0 +1,39 @@
+graph TD
+  START["Arabic user action"]
+  START --> ROUTE{"Flow"}
+
+  ROUTE -->|Pronunciation| PR1["POST pronunciation evaluate"]
+  PR1 --> PR2["Auth + limits"]
+  PR2 --> PR3["Resolve MSA/Syrian target"]
+  PR3 --> PR4{"multipart audio"}
+  PR4 -->|yes| PR5["Local speech score"]
+  PR5 --> PR6["speech-service: ffmpeg + Whisper + evaluate_pronunciation"]
+  PR6 --> PR7["Arabic score: 0.75 intelligibility + 0.25 fluency"]
+  PR4 -->|debug transcript| PR8["In-app Levenshtein evaluation"]
+  PR7 --> PR9["Store PronunciationAttempt + return score"]
+  PR8 --> PR9
+
+  ROUTE -->|No-Harakat| NH1["POST no-harakat attempt"]
+  NH1 --> NH2["Auth + limits + validate lexical item"]
+  NH2 --> NH3["strip diacritics + expected transliteration"]
+  NH3 --> NH4["Local speech score"]
+  NH4 --> NH5["buildNoHarakatTips rules"]
+  NH5 --> NH6["Store NoHarakatAttempt"]
+
+  ROUTE -->|Morphology| MO1["GET morphology queue"]
+  MO1 --> MO2["Rank unseen, then low score, then oldest"]
+  MO2 --> MO3["POST morphology attempt root/wazn"]
+  MO3 --> MO4["score: exact 100, overlap 70, else 25"]
+  MO4 --> MO5["GET morphology summary"]
+
+  ROUTE -->|Immersion| IM1["GET immersion plan"]
+  IM1 --> IM2["POST immersion log"]
+  IM2 --> IM3["GET immersion summary"]
+  IM3 --> IM4["ratioAdherenceScore"]
+
+  ROUTE -->|Snippet Mining| SN1["GET snippets feed"]
+  SN1 --> SN2["Select linked terms"]
+  SN2 --> SN3["POST snippets mine"]
+  SN3 --> SN4["Validate terms linked to snippet"]
+  SN4 --> SN5["Upsert ReviewCard FSRS dueAt now"]
+  SN5 --> SN6["Create deduped snippet interaction"]

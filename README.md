@@ -107,6 +107,22 @@ npm run speech:benchmark
 
 It writes `docs/benchmark-baseline.md` with exact/near transcript match and p50/p95 latency.
 
+## Arabic Vocabulary Dataset
+
+Arabic content is now seeded from `data/ar_8020_msa_syrian.v1.json`:
+
+- MSA is the primary form.
+- Syrian dialect is stored as a secondary companion form on each concept.
+- Phase 2 dataset size: 800 concepts (400 vocab + 400 chunks) across 8 balanced domains and 80 lessons.
+
+Generate + validate before seeding:
+
+```bash
+npm run data:generate:ar
+npm run data:enrich:ar
+npm run data:validate:ar
+```
+
 ## API Routes
 
 - `POST /api/auth/login`
@@ -114,8 +130,12 @@ It writes `docs/benchmark-baseline.md` with exact/near transcript match and p50/
 - `GET /api/session/today?language=ar_msa|zh_hans`
 - `POST /api/session/start`
 - `POST /api/attempt` (requires `x-idempotency-key` header)
-- `POST /api/pronunciation/evaluate`
-- `GET /api/pronunciation/target-audio?lexicalItemId=...`
+- `POST /api/pronunciation/evaluate` (`form=msa|syrian`, default `msa`)
+- `GET /api/pronunciation/target-audio?lexicalItemId=...&form=msa|syrian`
+- `GET /api/pronunciation/no-harakat/queue?language=ar_msa&limit=...`
+- `POST /api/pronunciation/no-harakat/attempt`
+- `GET /api/pronunciation/no-harakat/summary?range=7d|30d`
+- `GET /api/pronunciation/no-harakat/target-audio?lexicalItemId=...`
 - `GET /api/review/queue?language=...`
 - `POST /api/review/grade`
 - `GET /api/progress/summary?range=7d|30d`

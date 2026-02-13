@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import net from "node:net";
 import { resolve } from "node:path";
 
 const args = new Set(process.argv.slice(2));
@@ -121,10 +122,60 @@ function installDeps(venvPython) {
   runOrThrow(venvPython, ["-m", "pip", "install", "-r", "requirements.txt"]);
 }
 
-function runServer(venvPython) {
+function resolveSpeechEndpoint() {
+  const raw = mergedEnv.LOCAL_SPEECH_URL || "http://127.0.0.1:8001";
+  const parsed = new URL(raw);
+  const host = parsed.hostname || "127.0.0.1";
+  const port = Number(parsed.port || (parsed.protocol === "https:" ? 443 : 80));
+  return { host, port, baseUrl: `${parsed.protocol}//${host}:${port}` };
+}
+
+function canBindPort(host, port) {
+  return new Promise((resolvePromise) => {
+    const server = net.createServer();
+    server.once("error", () => resolvePromise(false));
+    server.once("listening", () => {
+      server.close(() => resolvePromise(true));
+    });
+    server.listen(port, host);
+  });
+}
+
+async function healthCheck(baseUrl) {
+  try {
+    const response = await fetch(`${baseUrl}/health`, { method: "GET" });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function holdOpenWithExistingService(baseUrl) {
+  console.log(`[speech-dev] Reusing running speech service at ${baseUrl}.`);
+  console.log("[speech-dev] Press Ctrl+C to stop dev:all.");
+
+  const keepAlive = setInterval(() => {}, 60_000);
+  const stop = () => {
+    clearInterval(keepAlive);
+    process.exit(0);
+  };
+  process.on("SIGINT", stop);
+  process.on("SIGTERM", stop);
+}
+
+function runServer(venvPython, endpoint) {
   const child = spawn(
     venvPython,
-    ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8001", "--reload"],
+    [
+      "-m",
+      "uvicorn",
+      "app.main:app",
+      "--host",
+      endpoint.host,
+      "--port",
+      String(endpoint.port),
+      "--reload",
+    ],
     {
       cwd: serviceDir,
       stdio: "inherit",
@@ -152,9 +203,10 @@ function runServer(venvPython) {
 }
 
 const venvPython = ensureVenv();
+const endpoint = resolveSpeechEndpoint();
 
 if (checkOnly) {
-  console.log(JSON.stringify({ serviceDir, venvDir, venvPython }, null, 2));
+  console.log(JSON.stringify({ serviceDir, venvDir, venvPython, endpoint }, null, 2));
   process.exit(0);
 }
 
@@ -162,4 +214,17 @@ if (!skipInstall) {
   installDeps(venvPython);
 }
 
-runServer(venvPython);
+const portAvailable = await canBindPort(endpoint.host, endpoint.port);
+if (!portAvailable) {
+  const healthy = await healthCheck(endpoint.baseUrl);
+  if (healthy) {
+    holdOpenWithExistingService(endpoint.baseUrl);
+  } else {
+    throw new Error(
+      `Port ${endpoint.port} is already in use, and no healthy speech service responded at ${endpoint.baseUrl}/health. ` +
+        `Stop the process using that port (for example: lsof -i :${endpoint.port}).`,
+    );
+  }
+} else {
+  runServer(venvPython, endpoint);
+}

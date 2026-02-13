@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { buildArabicForms } from "@/lib/arabic-forms";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ensure, handleRouteError, ok } from "@/lib/http";
@@ -25,6 +26,13 @@ export async function GET(
             lexicalItem: {
               include: {
                 patternNote: true,
+                lexicalVariants: {
+                  select: {
+                    register: true,
+                    scriptText: true,
+                    transliteration: true,
+                  },
+                },
               },
             },
           },
@@ -116,6 +124,12 @@ export async function GET(
           gloss: lessonItem.lexicalItem.gloss,
           domain: lessonItem.lexicalItem.domain,
           transliterationStage: stage,
+          forms: buildArabicForms({
+            language: lesson.language,
+            scriptText: lessonItem.lexicalItem.scriptText,
+            transliteration: lessonItem.lexicalItem.transliteration,
+            lexicalVariants: lessonItem.lexicalItem.lexicalVariants,
+          }),
         };
       }),
       unlockedGrammarNotes: Array.from(grammarNotes.values()),

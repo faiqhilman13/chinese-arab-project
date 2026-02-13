@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { parseArabicForm, resolveArabicTarget } from "@/lib/arabic-forms";
 import {
   PRONUNCIATION_DAILY_LIMIT,
   PRONUNCIATION_MONTHLY_LIMIT,
@@ -77,9 +78,18 @@ export async function POST(request: NextRequest) {
       const form = await request.formData();
       const lexicalItemId = form.get("lexicalItemId");
       const audio = form.get("audio");
+      const rawForm = form.get("form");
 
       ensure(typeof lexicalItemId === "string", 400, "INVALID_INPUT", "lexicalItemId is required.");
       ensure(audio instanceof File, 400, "INVALID_INPUT", "audio file is required.");
+      ensure(
+        typeof rawForm === "undefined" ||
+          rawForm === null ||
+          typeof rawForm === "string",
+        400,
+        "INVALID_INPUT",
+        "form must be msa or syrian.",
+      );
 
       const lexicalItem = await db.lexicalItem.findUnique({
         where: { id: lexicalItemId },
@@ -88,16 +98,31 @@ export async function POST(request: NextRequest) {
           scriptText: true,
           transliteration: true,
           language: true,
+          lexicalVariants: {
+            select: {
+              register: true,
+              scriptText: true,
+              transliteration: true,
+            },
+          },
         },
       });
 
       ensure(lexicalItem, 404, "ITEM_NOT_FOUND", "Lexical item does not exist.");
+      const requestedForm = parseArabicForm(typeof rawForm === "string" ? rawForm : undefined);
+      const target = resolveArabicTarget({
+        language: lexicalItem.language,
+        requestedForm,
+        scriptText: lexicalItem.scriptText,
+        transliteration: lexicalItem.transliteration,
+        lexicalVariants: lexicalItem.lexicalVariants,
+      });
 
       const evaluation = await scorePronunciationWithLocalService({
         audioFile: audio,
         language: lexicalItem.language,
-        targetText: lexicalItem.scriptText,
-        transliteration: lexicalItem.transliteration,
+        targetText: target.scriptText,
+        transliteration: target.transliteration,
       });
 
       const attempt = await db.pronunciationAttempt.create({
@@ -118,6 +143,7 @@ export async function POST(request: NextRequest) {
         feedback: evaluation.feedback,
         confidence: evaluation.confidence,
         components: evaluation.components,
+        form: target.form,
         remainingDaily: PRONUNCIATION_DAILY_LIMIT - (limits.dailyCount + 1),
         remainingMonthly: PRONUNCIATION_MONTHLY_LIMIT - (limits.monthlyCount + 1),
       });
@@ -139,15 +165,31 @@ export async function POST(request: NextRequest) {
         id: true,
         scriptText: true,
         transliteration: true,
+        language: true,
+        lexicalVariants: {
+          select: {
+            register: true,
+            scriptText: true,
+            transliteration: true,
+          },
+        },
       },
     });
 
     ensure(lexicalItem, 404, "ITEM_NOT_FOUND", "Lexical item does not exist.");
+    const requestedForm = parseArabicForm(input.form);
+    const target = resolveArabicTarget({
+      language: lexicalItem.language,
+      requestedForm,
+      scriptText: lexicalItem.scriptText,
+      transliteration: lexicalItem.transliteration,
+      lexicalVariants: lexicalItem.lexicalVariants,
+    });
 
     const evaluation = evaluatePronunciation({
       transcript: input.transcript,
-      scriptText: lexicalItem.scriptText,
-      transliteration: lexicalItem.transliteration,
+      scriptText: target.scriptText,
+      transliteration: target.transliteration,
     });
 
     const attempt = await db.pronunciationAttempt.create({
@@ -167,6 +209,7 @@ export async function POST(request: NextRequest) {
       score: evaluation.score,
       feedback: evaluation.feedback,
       confidence: evaluation.confidence,
+      form: target.form,
       components: {
         intelligibility: evaluation.score,
         fluency: Math.max(40, evaluation.score - 10),

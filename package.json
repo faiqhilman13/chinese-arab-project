@@ -12,6 +12,9 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
+    "data:generate:ar": "node ./scripts/generate-ar-dataset.mjs",
+    "data:enrich:ar": "node ./scripts/enrich-ar-pronunciation-fields.mjs",
+    "data:validate:ar": "node ./scripts/validate-ar-dataset.mjs",
     "speech:dev": "node ./scripts/speech-dev.mjs",
     "speech:benchmark": "node ./scripts/benchmark-speech.mjs --dataset scripts/benchmark/smoke-set.json --out docs/benchmark-baseline.md"
   },

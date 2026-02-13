@@ -38,3 +38,31 @@ export const PRONUNCIATION_MONTHLY_LIMIT = Number.parseInt(
   process.env.PRONUNCIATION_MONTHLY_LIMIT ?? "200",
   10,
 );
+
+function readBooleanFlag(value: string | undefined, defaultValue: boolean): boolean {
+  if (value == null) {
+    return defaultValue;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "0" || normalized === "false" || normalized === "off") {
+    return false;
+  }
+  if (normalized === "1" || normalized === "true" || normalized === "on") {
+    return true;
+  }
+  return defaultValue;
+}
+
+export const ENABLE_AR_IMMERSION_TRACKER = readBooleanFlag(
+  process.env.NEXT_PUBLIC_ENABLE_AR_IMMERSION_TRACKER,
+  true,
+);
+export const ENABLE_AR_SNIPPET_MINING = readBooleanFlag(
+  process.env.NEXT_PUBLIC_ENABLE_AR_SNIPPET_MINING,
+  true,
+);
+export const ENABLE_AR_MORPHOLOGY_TRAINER = readBooleanFlag(
+  process.env.NEXT_PUBLIC_ENABLE_AR_MORPHOLOGY_TRAINER,
+  true,
+);
