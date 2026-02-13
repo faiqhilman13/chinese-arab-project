@@ -102,3 +102,8 @@ Current scoring dimensions:
 - Language schedule alternates by day (Arabic and Chinese).
 - New content pauses automatically when review backlog exceeds 50 due cards.
 - Mastery requires 5+ successful recalls across at least 7 days.
+
+## Project Documentation
+
+- Local model stack and runtime details: `docs/local-models.md`
+- Short-term improvement plan: `docs/roadmap-2weeks.md`
