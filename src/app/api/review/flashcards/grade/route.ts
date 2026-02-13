@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { SkillType } from "@prisma/client";
+import { ItemType, SchedulerVersion, SkillType } from "@prisma/client";
 import { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ensure, handleRouteError, ok } from "@/lib/http";
 import { API_GRADE_TO_DB } from "@/lib/mappers";
 import { getNextSchedule } from "@/lib/review-scheduler";
-import { reviewGradeSchema } from "@/lib/schemas";
+import { flashcardGradeSchema } from "@/lib/schemas";
 
 const scoreByGrade = {
   again: 30,
@@ -19,16 +19,63 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requireUser(request);
     const body = await request.json();
-    const input = reviewGradeSchema.parse(body);
+    const input = flashcardGradeSchema.parse(body);
 
-    const card = await db.reviewCard.findUnique({
+    const lexicalItem = await db.lexicalItem.findUnique({
       where: {
-        id: input.reviewCardId,
+        id: input.lexicalItemId,
+      },
+      select: {
+        id: true,
+        itemType: true,
       },
     });
 
-    ensure(card, 404, "REVIEW_CARD_NOT_FOUND", "Review card does not exist.");
-    ensure(card.userId === user.id, 403, "FORBIDDEN", "Review card does not belong to active user.");
+    ensure(lexicalItem, 404, "ITEM_NOT_FOUND", "Lexical item does not exist.");
+    ensure(
+      lexicalItem.itemType === ItemType.VOCAB || lexicalItem.itemType === ItemType.CHUNK,
+      400,
+      "UNSUPPORTED_ITEM_TYPE",
+      "Flashcards only support vocabulary and chunks.",
+    );
+
+    let card = input.reviewCardId
+      ? await db.reviewCard.findUnique({
+          where: {
+            id: input.reviewCardId,
+          },
+        })
+      : null;
+
+    if (input.reviewCardId) {
+      ensure(card, 404, "REVIEW_CARD_NOT_FOUND", "Review card does not exist.");
+    }
+
+    if (card) {
+      ensure(card.userId === user.id, 403, "FORBIDDEN", "Review card does not belong to active user.");
+      ensure(
+        card.lexicalItemId === input.lexicalItemId,
+        400,
+        "MISMATCHED_REVIEW_CARD",
+        "Review card does not match provided lexical item.",
+      );
+    } else {
+      card = await db.reviewCard.upsert({
+        where: {
+          userId_lexicalItemId: {
+            userId: user.id,
+            lexicalItemId: input.lexicalItemId,
+          },
+        },
+        create: {
+          userId: user.id,
+          lexicalItemId: input.lexicalItemId,
+          dueAt: new Date(),
+          schedulerVersion: SchedulerVersion.FSRS,
+        },
+        update: {},
+      });
+    }
 
     const grade = API_GRADE_TO_DB[input.grade];
     const next = getNextSchedule(card, grade, new Date());
@@ -58,10 +105,10 @@ export async function POST(request: NextRequest) {
       db.attemptLog.create({
         data: {
           userId: user.id,
-          lexicalItemId: card.lexicalItemId,
+          lexicalItemId: input.lexicalItemId,
           skillType: SkillType.READING,
           score: scoreByGrade[input.grade],
-          idempotencyKey: `review-${randomUUID()}`,
+          idempotencyKey: `flashcard-${randomUUID()}`,
         },
       }),
     ]);
@@ -69,6 +116,7 @@ export async function POST(request: NextRequest) {
     return ok({
       reviewCard: {
         id: updatedCard.id,
+        lexicalItemId: updatedCard.lexicalItemId,
         dueAt: updatedCard.dueAt.toISOString(),
         state: updatedCard.state.toLowerCase(),
         successCount: updatedCard.successCount,

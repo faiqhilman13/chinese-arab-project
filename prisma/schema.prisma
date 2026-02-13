@@ -39,6 +39,11 @@ enum ReviewGrade {
   EASY
 }
 
+enum SchedulerVersion {
+  LEGACY
+  FSRS
+}
+
 model User {
   id                    String                 @id @default(cuid())
   email                 String                 @unique
@@ -114,9 +119,15 @@ model ReviewCard {
   id                  String      @id @default(cuid())
   userId              String
   lexicalItemId       String
+  schedulerVersion    SchedulerVersion @default(LEGACY)
   ease                Float       @default(2.5)
   intervalDays        Int         @default(0)
   dueAt               DateTime
+  fsrsStability       Float?
+  fsrsDifficulty      Float?
+  fsrsLastReview      DateTime?
+  fsrsReps            Int         @default(0)
+  fsrsLapses          Int         @default(0)
   lastScore           Int?
   state               ReviewState @default(NEW)
   successCount        Int         @default(0)

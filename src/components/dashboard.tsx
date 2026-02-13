@@ -94,6 +94,7 @@ type LocalSpeechHealth = {
   endpoint: string;
   whisperModel?: string | null;
   ttsBackend?: string | null;
+  ttsMode?: string | null;
 };
 
 type ApiError = {
@@ -126,6 +127,9 @@ function languageClass(language: "ar_msa" | "zh_hans") {
 function languageLocale(language: "ar_msa" | "zh_hans"): string {
   return language === "ar_msa" ? "ar-SA" : "zh-CN";
 }
+
+const ENABLE_TRANSCRIPT_DEBUG =
+  process.env.NEXT_PUBLIC_ENABLE_PRONUNCIATION_DEBUG_TRANSCRIPT === "true";
 
 function supportsAudioRecording(): boolean {
   if (typeof window === "undefined") {
@@ -853,31 +857,33 @@ export function Dashboard() {
         <p className="mt-1 text-xs text-slate-500">
           Local speech backend:{" "}
           {localSpeech?.available
-            ? `online (${localSpeech.ttsBackend ?? "tts"} / ${localSpeech.whisperModel ?? "stt"})`
+            ? `online (${localSpeech.ttsBackend ?? "tts"} / ${localSpeech.whisperModel ?? "stt"} / ${localSpeech.ttsMode ?? "mode"})`
             : "offline - run `npm run speech:dev`"}
         </p>
 
-        <form className="mt-4 grid gap-2 sm:grid-cols-3" onSubmit={submitPronunciation}>
-          <input
-            value={pronItemId}
-            onChange={(event) => setPronItemId(event.target.value)}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Fallback: lexical item id"
-          />
-          <input
-            value={pronTranscript}
-            onChange={(event) => setPronTranscript(event.target.value)}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
-            placeholder="Fallback: type transcript manually"
-          />
-          <button
-            type="submit"
-            className="rounded-xl bg-amber-500 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-70"
-            disabled={busy}
-          >
-            Score typed transcript
-          </button>
-        </form>
+        {ENABLE_TRANSCRIPT_DEBUG ? (
+          <form className="mt-4 grid gap-2 sm:grid-cols-3" onSubmit={submitPronunciation}>
+            <input
+              value={pronItemId}
+              onChange={(event) => setPronItemId(event.target.value)}
+              className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+              placeholder="Fallback: lexical item id"
+            />
+            <input
+              value={pronTranscript}
+              onChange={(event) => setPronTranscript(event.target.value)}
+              className="rounded-xl border border-slate-300 px-3 py-2 text-sm sm:col-span-2"
+              placeholder="Fallback: type transcript manually"
+            />
+            <button
+              type="submit"
+              className="rounded-xl bg-amber-500 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-amber-400 disabled:opacity-70"
+              disabled={busy}
+            >
+              Score typed transcript
+            </button>
+          </form>
+        ) : null}
       </section>
 
       <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

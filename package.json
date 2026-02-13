@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
-    "speech:dev": "./scripts/speech_dev.sh"
+    "speech:dev": "node ./scripts/speech-dev.mjs",
+    "speech:benchmark": "node ./scripts/benchmark-speech.mjs --dataset scripts/benchmark/smoke-set.json --out docs/benchmark-baseline.md"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
@@ -30,6 +31,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "concurrently": "^9.2.1",
+    "docx": "^9.5.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",

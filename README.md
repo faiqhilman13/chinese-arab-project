@@ -1,6 +1,6 @@
 # Language Learning MVP
 
-Personal web app for Arabic (MSA) and Mandarin (Simplified) with a baby-style progression:
+Personal web app for Arabic (MSA) and Mandarin (Simplified) with a progressive curriculum:
 
 1. Vocabulary first
 2. Short chunks/phrases next
@@ -13,6 +13,7 @@ Personal web app for Arabic (MSA) and Mandarin (Simplified) with a baby-style pr
 - Prisma + SQLite
 - JWT cookie auth (single-user)
 - Zod validation
+- Local speech worker: FastAPI + faster-whisper + local-only TTS
 
 ## Quick Start
 
@@ -30,42 +31,27 @@ First login creates the single user account if none exists yet.
 
 ## Environment Variables
 
-Create `.env`:
+Copy `.env.example` to `.env` and adjust values as needed.
+
+Speech defaults are now:
 
 ```env
-DATABASE_URL="file:./dev.db"
-SESSION_SECRET="replace-with-a-long-random-secret"
-PRONUNCIATION_DAILY_LIMIT="20"
-PRONUNCIATION_MONTHLY_LIMIT="200"
-LOCAL_SPEECH_URL="http://127.0.0.1:8001"
+WHISPER_MODEL="small"
+WHISPER_MODEL_ZH="tiny"
+LOCAL_TTS_BACKEND="auto" # auto | qwen | artst
 ```
 
-Optional local speech settings:
+Debug-only transcript scoring path (disabled by default):
 
 ```env
-WHISPER_MODEL="tiny"
-WHISPER_DEVICE="cpu"
-WHISPER_COMPUTE_TYPE="int8"
-WHISPER_BEAM_SIZE="3"
-WHISPER_BEST_OF="3"
-WHISPER_FALLBACK_BEAM_SIZE="5"
-WHISPER_FALLBACK_BEST_OF="5"
-WHISPER_FAST_THRESHOLD="82"
-LOCAL_TTS_BACKEND="say" # or qwen
-QWEN_TTS_MODEL="Qwen/Qwen3-TTS-0.6B"
-```
-
-If you prefer separate terminals:
-
-```bash
-npm run speech:dev
-# second terminal
-npm run dev
+ENABLE_PRONUNCIATION_DEBUG_TRANSCRIPT="false"
+PRONUNCIATION_DEBUG_KEY=""
+NEXT_PUBLIC_ENABLE_PRONUNCIATION_DEBUG_TRANSCRIPT="false"
 ```
 
 ## Local Speech Service
 
-The app now uses a local speech backend for voice drills:
+The app uses a local speech backend for voice drills:
 
 - `POST /synthesize` (target pronunciation audio)
 - `POST /score` (audio -> transcript + pronunciation components)
@@ -78,7 +64,44 @@ Current scoring dimensions:
 - intelligibility (target vs transcript)
 - fluency (pace/pause)
 - Mandarin tone contour score (`zh`)
-- Arabic phonology proxy score (`ar`)
+- Arabic: intelligibility + fluency only (no fake phonology proxy)
+
+STT behavior:
+
+- primary decode: no target-text conditioning
+- fallback decode: relaxed decode settings, still no target-text conditioning
+
+TTS behavior:
+
+- model-only local backends (`qwen` for Mandarin, `artst` for Arabic)
+- `LOCAL_TTS_BACKEND=auto` selects model by language with no fallback chain
+- no cloud fallback
+
+## Local Runtime Prerequisites
+
+- Python 3.10+
+- `ffmpeg` in PATH (required for audio conversion), or set `FFMPEG_PATH`
+- `qwen-tts` installed in the speech-service Python environment
+
+Start speech worker:
+
+```bash
+npm run speech:dev
+```
+
+This launcher is cross-platform (PowerShell/cmd/bash).
+
+## Speech Benchmarking
+
+1. Create `scripts/benchmark/smoke-set.json` from `scripts/benchmark/smoke-set.sample.json`.
+2. Add audio files under `scripts/benchmark/audio/`.
+3. Run:
+
+```bash
+npm run speech:benchmark
+```
+
+It writes `docs/benchmark-baseline.md` with exact/near transcript match and p50/p95 latency.
 
 ## API Routes
 
@@ -107,3 +130,4 @@ Current scoring dimensions:
 
 - Local model stack and runtime details: `docs/local-models.md`
 - Short-term improvement plan: `docs/roadmap-2weeks.md`
+- Latest benchmark report: `docs/benchmark-baseline.md`

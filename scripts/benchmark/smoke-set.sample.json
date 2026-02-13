@@ -1,0 +1,20 @@
+[
+  {
+    "id": "zh-wo-yao-shui",
+    "language": "zh",
+    "targetText": "我要水",
+    "expectedTranscript": "我要水",
+    "transliteration": "wǒ yào shuǐ",
+    "audioPath": "scripts/benchmark/audio/zh-wo-yao-shui.wav",
+    "runs": 3
+  },
+  {
+    "id": "ar-urid-maa",
+    "language": "ar",
+    "targetText": "أريد ماء",
+    "expectedTranscript": "أريد ماء",
+    "transliteration": "urid maa",
+    "audioPath": "scripts/benchmark/audio/ar-urid-maa.wav",
+    "runs": 3
+  }
+]

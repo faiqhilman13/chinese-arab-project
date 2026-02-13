@@ -6,7 +6,13 @@ import unicodedata
 
 def normalize_text(text: str) -> str:
     normalized = unicodedata.normalize("NFKD", text.lower())
-    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    # Strip Latin combining marks (accents) but keep Arabic combining marks
+    # (harakat U+0610-U+065F) so diacritised MSA text is preserved when present.
+    normalized = "".join(
+        ch
+        for ch in normalized
+        if not unicodedata.combining(ch) or ("\u0610" <= ch <= "\u065f")
+    )
     normalized = re.sub(r"[^\w\u0600-\u06FF\u4E00-\u9FFF]+", "", normalized)
     return normalized.strip()
 

@@ -1,0 +1,54 @@
+## tasks completed
+
+- Reviewed `docs/audit-report.docx` against the current codebase and confirmed which fixes were implemented.
+- Ran project quality checks and build checks:
+  - `npm run lint` (pass)
+  - `npm run typecheck` (pass)
+  - `npm run build` (pass)
+  - `python -m compileall speech-service/app` (pass)
+- Reseeded Prisma data with `npm run db:seed` and verified Mandarin transliterations in DB now include tone marks (`jiā`, `mén`, `shuǐ`, `chuáng`, etc.).
+- Implemented anti-bias STT adjustment:
+  - Removed target-text hotword influence from fallback decode in `speech-service/app/stt.py`.
+- Implemented debug-route safety controls:
+  - Added transcript-only scoring gate via `ENABLE_PRONUNCIATION_DEBUG_TRANSCRIPT` and optional `PRONUNCIATION_DEBUG_KEY` in `src/app/api/pronunciation/evaluate/route.ts`.
+  - Hid manual transcript scoring UI unless `NEXT_PUBLIC_ENABLE_PRONUNCIATION_DEBUG_TRANSCRIPT=true` in `src/components/dashboard.tsx`.
+- Enforced local-only speech policy:
+  - Reworked `speech-service/app/tts.py` to local-only backends (`auto`, `say`, `qwen`, `espeak`), with explicit errors and no cloud fallback.
+  - Updated defaults in `speech-service/app/config.py` to `WHISPER_MODEL=small` and `LOCAL_TTS_BACKEND=auto`.
+  - Added `tts_mode: "local-only"` to health response in `speech-service/app/main.py`.
+  - Removed `edge-tts` dependency from `speech-service/requirements.txt`.
+- Fixed Windows speech startup:
+  - Replaced bash-only script call with cross-platform Node launcher via `scripts/speech-dev.mjs`.
+  - Updated `package.json` `speech:dev` script accordingly.
+- Added reproducible speech benchmark tooling:
+  - `scripts/benchmark-speech.mjs`
+  - `scripts/benchmark/README.md`
+  - `scripts/benchmark/smoke-set.sample.json`
+  - `docs/benchmark-baseline.md`
+  - Added `speech:benchmark` npm script.
+- Synced docs/config templates with actual runtime behavior:
+  - Updated `README.md`, `docs/local-models.md`, `docs/roadmap-2weeks.md`, and added `.env.example`.
+  - Updated local `.env` defaults to local-only + `small` whisper.
+
+## files edited/created
+
+- Updated: `speech-service/app/stt.py`
+- Updated: `src/app/api/pronunciation/evaluate/route.ts`
+- Updated: `src/components/dashboard.tsx`
+- Updated: `src/lib/local-speech-service.ts`
+- Updated: `speech-service/app/config.py`
+- Updated: `speech-service/app/main.py`
+- Updated: `speech-service/app/tts.py`
+- Updated: `speech-service/requirements.txt`
+- Updated: `package.json`
+- Created: `scripts/speech-dev.mjs`
+- Created: `scripts/benchmark-speech.mjs`
+- Created: `scripts/benchmark/README.md`
+- Created: `scripts/benchmark/smoke-set.sample.json`
+- Created: `docs/benchmark-baseline.md`
+- Created: `.env.example`
+- Updated: `.env`
+- Updated: `README.md`
+- Updated: `docs/local-models.md`
+- Updated: `docs/roadmap-2weeks.md`
+- Updated by reseed operation: `prisma/dev.db`

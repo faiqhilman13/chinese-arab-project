@@ -1,12 +1,13 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, SchedulerVersion } from "@prisma/client";
 import { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { startOfUtcDay } from "@/lib/dates";
 import { ensure, handleRouteError, ok } from "@/lib/http";
 import { API_SKILL_TO_DB } from "@/lib/mappers";
+import { getNextSchedule } from "@/lib/review-scheduler";
 import { attemptSchema } from "@/lib/schemas";
-import { getNextReviewUpdate, gradeFromScore } from "@/lib/srs";
+import { gradeFromScore } from "@/lib/srs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,12 +70,13 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         lexicalItemId: input.lexicalItemId,
         dueAt: new Date(),
+        schedulerVersion: SchedulerVersion.FSRS,
       },
       update: {},
     });
 
     const nextGrade = gradeFromScore(input.score);
-    const srsUpdate = getNextReviewUpdate(card, nextGrade, new Date());
+    const schedule = getNextSchedule(card, nextGrade, new Date());
 
     const [attempt, updatedCard] = await db.$transaction([
       db.attemptLog.create({
@@ -90,14 +92,20 @@ export async function POST(request: NextRequest) {
       db.reviewCard.update({
         where: { id: card.id },
         data: {
-          ease: srsUpdate.ease,
-          intervalDays: srsUpdate.intervalDays,
-          dueAt: srsUpdate.dueAt,
+          schedulerVersion: schedule.fsrs.schedulerVersion,
+          ease: schedule.legacy.ease,
+          intervalDays: schedule.legacy.intervalDays,
+          dueAt: schedule.legacy.dueAt,
+          fsrsStability: schedule.fsrs.fsrsStability,
+          fsrsDifficulty: schedule.fsrs.fsrsDifficulty,
+          fsrsLastReview: schedule.fsrs.fsrsLastReview,
+          fsrsReps: schedule.fsrs.fsrsReps,
+          fsrsLapses: schedule.fsrs.fsrsLapses,
           lastScore: input.score,
-          state: srsUpdate.state,
-          successCount: srsUpdate.successCount,
-          lastReviewedAt: srsUpdate.lastReviewedAt,
-          transliterationStage: srsUpdate.transliterationStage,
+          state: schedule.legacy.state,
+          successCount: schedule.legacy.successCount,
+          lastReviewedAt: schedule.legacy.lastReviewedAt,
+          transliterationStage: schedule.legacy.transliterationStage,
         },
       }),
     ]);
@@ -141,6 +149,7 @@ export async function POST(request: NextRequest) {
         dueAt: updatedCard.dueAt.toISOString(),
         successCount: updatedCard.successCount,
         transliterationStage: updatedCard.transliterationStage,
+        schedulerVersion: updatedCard.schedulerVersion.toLowerCase(),
       },
     });
   } catch (error) {

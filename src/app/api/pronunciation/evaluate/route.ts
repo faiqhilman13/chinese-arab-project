@@ -13,6 +13,20 @@ import { evaluatePronunciation } from "@/lib/pronunciation";
 import { pronunciationSchema } from "@/lib/schemas";
 import { requireUser } from "@/lib/auth";
 
+function allowTranscriptDebug(request: NextRequest): boolean {
+  if (process.env.ENABLE_PRONUNCIATION_DEBUG_TRANSCRIPT !== "true") {
+    return false;
+  }
+
+  const expectedKey = process.env.PRONUNCIATION_DEBUG_KEY;
+  if (!expectedKey) {
+    return true;
+  }
+
+  const providedKey = request.headers.get("x-pronunciation-debug-key");
+  return providedKey === expectedKey;
+}
+
 async function enforceAttemptLimits(userId: string) {
   const now = new Date();
   const dayStart = startOfUtcDay(now);
@@ -108,6 +122,13 @@ export async function POST(request: NextRequest) {
         remainingMonthly: PRONUNCIATION_MONTHLY_LIMIT - (limits.monthlyCount + 1),
       });
     }
+
+    ensure(
+      allowTranscriptDebug(request),
+      403,
+      "PRONUNCIATION_DEBUG_DISABLED",
+      "Transcript-only pronunciation evaluation is disabled.",
+    );
 
     const body = await request.json();
     const input = pronunciationSchema.parse(body);

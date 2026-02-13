@@ -6,6 +6,7 @@ import {
   Space_Grotesk,
 } from "next/font/google";
 import "./globals.css";
+import { Navigation } from "@/components/navigation";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -44,7 +45,12 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${firaCode.variable} ${notoArabic.variable} ${notoSc.variable} antialiased`}
       >
-        {children}
+        <div className="min-h-screen p-6">
+          <div className="mx-auto max-w-5xl">
+            <Navigation />
+            {children}
+          </div>
+        </div>
       </body>
     </html>
   );

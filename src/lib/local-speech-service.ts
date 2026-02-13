@@ -7,6 +7,23 @@ function baseUrl(): string {
   return (process.env.LOCAL_SPEECH_URL ?? DEFAULT_URL).replace(/\/$/, "");
 }
 
+function detailFromPayload(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const detail = (payload as { detail?: unknown }).detail;
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  if (detail && typeof detail === "object") {
+    return JSON.stringify(detail);
+  }
+
+  return null;
+}
+
 function speechLanguage(language: LanguageCode): "ar" | "zh" {
   return language === LanguageCode.AR_MSA ? "ar" : "zh";
 }
@@ -50,7 +67,13 @@ export async function scorePronunciationWithLocalService(args: {
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as { detail?: unknown };
-    throw new ApiError(502, "LOCAL_SPEECH_ERROR", "Local speech service failed to score audio.", payload);
+    const detail = detailFromPayload(payload);
+    const status = response.status >= 400 && response.status < 500 ? response.status : 502;
+    const message = detail
+      ? `Local speech service failed to score audio. ${detail}`
+      : "Local speech service failed to score audio.";
+
+    throw new ApiError(status, "LOCAL_SPEECH_ERROR", message, payload);
   }
 
   return (await response.json()) as ScoreResponse;
@@ -84,7 +107,13 @@ export async function synthesizeWithLocalService(args: {
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as { detail?: unknown };
-    throw new ApiError(502, "LOCAL_TTS_ERROR", "Local speech service failed to synthesize audio.", payload);
+    const detail = detailFromPayload(payload);
+    const status = response.status >= 400 && response.status < 500 ? response.status : 502;
+    const message = detail
+      ? `Local speech service failed to synthesize audio. ${detail}`
+      : "Local speech service failed to synthesize audio.";
+
+    throw new ApiError(status, "LOCAL_TTS_ERROR", message, payload);
   }
 
   return {
@@ -106,12 +135,14 @@ export async function checkLocalSpeechHealth() {
     const payload = (await response.json()) as {
       whisper_model?: string;
       tts_backend?: string;
+      tts_mode?: string;
     };
 
     return {
       available: true,
       whisperModel: payload.whisper_model ?? null,
       ttsBackend: payload.tts_backend ?? null,
+      ttsMode: payload.tts_mode ?? null,
     };
   } catch {
     return { available: false };

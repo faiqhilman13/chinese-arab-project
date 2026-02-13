@@ -2,8 +2,9 @@ function normalize(input: string): string {
   return input
     .toLowerCase()
     .normalize("NFKD")
+    // Strip Latin combining marks but keep Arabic harakat (U+0610-U+065F).
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\p{L}\p{N}]+/gu, "")
+    .replace(/[^\p{L}\p{N}\u0600-\u06FF\u4E00-\u9FFF]+/gu, "")
     .trim();
 }
 

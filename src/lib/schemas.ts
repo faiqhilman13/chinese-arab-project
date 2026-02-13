@@ -31,6 +31,24 @@ export const reviewGradeSchema = z.object({
   grade: z.enum(Object.keys(API_GRADE_TO_DB) as ["again", "hard", "good", "easy"]),
 });
 
+export const galleryQuerySchema = z.object({
+  language: languageSchema,
+  domain: z.string().trim().min(1).max(64).optional(),
+  search: z.string().trim().min(1).max(120).optional(),
+  limit: z.coerce.number().int().min(1).max(1000).default(200),
+});
+
+export const flashcardFeedQuerySchema = z.object({
+  language: languageSchema,
+  limit: z.coerce.number().int().min(1).max(1000).default(200),
+});
+
+export const flashcardGradeSchema = z.object({
+  lexicalItemId: z.string().cuid(),
+  reviewCardId: z.string().cuid().nullable().optional(),
+  grade: z.enum(Object.keys(API_GRADE_TO_DB) as ["again", "hard", "good", "easy"]),
+});
+
 export const reminderSchema = z.object({
   enabled: z.boolean(),
   localTime: z
