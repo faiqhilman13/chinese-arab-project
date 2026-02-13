@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum LanguageCode {
+  AR_MSA
+  ZH_HANS
+}
+
+enum SkillType {
+  LISTENING
+  SPEAKING
+  READING
+  TYPING
+}
+
+enum ItemType {
+  VOCAB
+  CHUNK
+  PATTERN
+}
+
+enum ReviewState {
+  NEW
+  LEARNING
+  REVIEW
+  MASTERED
+}
+
+enum ReviewGrade {
+  AGAIN
+  HARD
+  GOOD
+  EASY
+}
+
+model User {
+  id                    String                 @id @default(cuid())
+  email                 String                 @unique
+  passwordHash          String
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  reviewCards           ReviewCard[]
+  attemptLogs           AttemptLog[]
+  pronunciationAttempts PronunciationAttempt[]
+  dailySessions         DailySession[]
+  reminderPref          ReminderPref?
+}
+
+model PatternNote {
+  id                  String       @id @default(cuid())
+  language            LanguageCode
+  title               String
+  explanation         String
+  unlockExposureCount Int          @default(12)
+  lexicalItems        LexicalItem[]
+  createdAt           DateTime     @default(now())
+}
+
+model LexicalItem {
+  id                    String                 @id @default(cuid())
+  language              LanguageCode
+  domain                String
+  itemType              ItemType
+  scriptText            String
+  transliteration       String?
+  gloss                 String
+  audioUrl              String?
+  imageUrl              String?
+  difficulty            Int                    @default(1)
+  patternNoteId         String?
+  patternNote           PatternNote?           @relation(fields: [patternNoteId], references: [id], onDelete: SetNull)
+  lessonItems           LessonItem[]
+  reviewCards           ReviewCard[]
+  attemptLogs           AttemptLog[]
+  pronunciationAttempts PronunciationAttempt[]
+  generatedVariants     GeneratedVariant[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([language, domain])
+}
+
+model Lesson {
+  id               String       @id @default(cuid())
+  language         LanguageCode
+  domain           String
+  sequenceNo       Int
+  estimatedMinutes Int
+  lessonItems      LessonItem[]
+  createdAt        DateTime     @default(now())
+
+  @@unique([language, domain, sequenceNo])
+  @@index([language, sequenceNo])
+}
+
+model LessonItem {
+  lessonId      String
+  lexicalItemId String
+  position      Int
+  lesson        Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lexicalItem   LexicalItem @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, lexicalItemId])
+  @@unique([lessonId, position])
+}
+
+model ReviewCard {
+  id                  String      @id @default(cuid())
+  userId              String
+  lexicalItemId       String
+  ease                Float       @default(2.5)
+  intervalDays        Int         @default(0)
+  dueAt               DateTime
+  lastScore           Int?
+  state               ReviewState @default(NEW)
+  successCount        Int         @default(0)
+  firstSeenAt         DateTime    @default(now())
+  lastReviewedAt      DateTime?
+  transliterationStage Int        @default(1)
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lexicalItem         LexicalItem @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  @@unique([userId, lexicalItemId])
+  @@index([userId, dueAt])
+}
+
+model AttemptLog {
+  id             String      @id @default(cuid())
+  userId         String
+  lexicalItemId  String
+  skillType      SkillType
+  score          Int
+  latencyMs      Int?
+  idempotencyKey String
+  createdAt      DateTime    @default(now())
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lexicalItem    LexicalItem @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+}
+
+model PronunciationAttempt {
+  id            String      @id @default(cuid())
+  userId        String
+  lexicalItemId String
+  transcript    String
+  score         Int
+  audioPath     String?
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lexicalItem   LexicalItem @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model DailySession {
+  id             String       @id @default(cuid())
+  userId         String
+  date           DateTime
+  language       LanguageCode
+  plannedMinutes Int
+  completedMinutes Int        @default(0)
+  streakCount    Int          @default(0)
+  startedAt      DateTime     @default(now())
+  endedAt        DateTime?
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model ReminderPref {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  enabled   Boolean  @default(false)
+  localTime String   @default("20:00")
+  timezone  String   @default("UTC")
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GeneratedVariant {
+  id            String       @id @default(cuid())
+  lexicalItemId String
+  language      LanguageCode
+  promptText    String
+  expectedGloss String
+  createdAt     DateTime     @default(now())
+  lexicalItem   LexicalItem  @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+
+  @@index([lexicalItemId, createdAt])
+}
