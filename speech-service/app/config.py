@@ -32,6 +32,10 @@ class Settings:
     local_tts_backend: str = os.getenv("LOCAL_TTS_BACKEND", "auto")
     qwen_tts_model: str = os.getenv("QWEN_TTS_MODEL", "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign")
     artst_model: str = os.getenv("ARTST_MODEL", "MBZUAI/speecht5_tts_clartts_ar")
+    elevenlabs_api_key: str = os.getenv("ELEVENLABS_API_KEY", "")
+    elevenlabs_ar_voice_id: str = os.getenv("ELEVENLABS_AR_VOICE_ID", "")
+    elevenlabs_model_id: str = os.getenv("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2")
+    elevenlabs_timeout_seconds: float = float(os.getenv("ELEVENLABS_TIMEOUT_SECONDS", "20"))
     max_upload_seconds: float = float(os.getenv("MAX_UPLOAD_SECONDS", "12"))
 
 

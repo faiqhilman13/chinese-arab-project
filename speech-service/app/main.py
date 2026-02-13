@@ -47,11 +47,15 @@ async def startup_warmup() -> None:
 
 @app.get("/health")
 def health():
+    tts_mode = "local-only"
+    if SETTINGS.elevenlabs_api_key and SETTINGS.elevenlabs_ar_voice_id:
+        tts_mode = "arabic-elevenlabs"
+
     return {
         "ok": True,
         "whisper_model": SETTINGS.whisper_model,
         "tts_backend": SETTINGS.local_tts_backend,
-        "tts_mode": "local-only",
+        "tts_mode": tts_mode,
     }
 
 

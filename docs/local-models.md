@@ -9,7 +9,7 @@ Define the local speech stack for scoring and synthesis, plus how to benchmark c
 | Layer | Implementation | Status |
 | --- | --- | --- |
 | STT | `faster-whisper` (`WHISPER_MODEL=small` default) | Active |
-| TTS | Model-only backends in `speech-service/app/tts.py` (`auto`, `qwen`, `artst`) | Active |
+| TTS | Backends in `speech-service/app/tts.py` (`auto`, `qwen`, `artst`, `elevenlabs`) | Active |
 | Pronunciation scoring | `speech-service/app/scoring.py` | Active |
 | App integration | `src/lib/local-speech-service.ts` + `/api/pronunciation/*` routes | Active |
 
@@ -27,13 +27,16 @@ This keeps transcript scoring from being biased toward expected answers.
 2. `ar`: intelligibility + fluency (no fake acoustic phonology proxy).
 3. Confidence guardrails are limited to prevent collapse on noisy clips.
 
-## TTS Policy (Local-Only)
+## TTS Policy
 
-1. No cloud TTS fallback.
-2. Backends:
+1. Backends:
    1. `qwen`: local Mandarin TTS.
    2. `artst`: local Arabic TTS.
-   3. `auto`: strict model routing (`zh` -> `qwen`, `ar` -> `artst`) with no fallback chain.
+   3. `elevenlabs`: Arabic cloud TTS via ElevenLabs API.
+2. `LOCAL_TTS_BACKEND=auto`:
+   1. `zh` -> `qwen`,
+   2. `ar` -> `elevenlabs` then `artst` when ElevenLabs credentials are present,
+   3. `ar` -> `artst` when ElevenLabs credentials are missing.
 3. `ffmpeg` is required for audio conversion to browser-safe WAV.
 
 ## Runtime Topology
@@ -74,9 +77,13 @@ WHISPER_ZH_SKIP_QUALITY_FALLBACK="true"
 WHISPER_ZH_VAD_FILTER="false"
 MAX_UPLOAD_SECONDS="12"
 FFMPEG_PATH=""
-LOCAL_TTS_BACKEND="auto" # auto | qwen | artst
+LOCAL_TTS_BACKEND="auto" # auto | qwen | artst | elevenlabs
 QWEN_TTS_MODEL="Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
 ARTST_MODEL="MBZUAI/speecht5_tts_clartts_ar"
+ELEVENLABS_API_KEY=""
+ELEVENLABS_AR_VOICE_ID=""
+ELEVENLABS_MODEL_ID="eleven_multilingual_v2"
+ELEVENLABS_TIMEOUT_SECONDS="20"
 ```
 
 ## Benchmark Procedure

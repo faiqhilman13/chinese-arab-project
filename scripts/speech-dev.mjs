@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const args = new Set(process.argv.slice(2));
@@ -8,6 +8,49 @@ const skipInstall = args.has("--skip-install");
 const rootDir = resolve(import.meta.dirname, "..");
 const serviceDir = resolve(rootDir, "speech-service");
 const venvDir = resolve(serviceDir, ".venv");
+
+function parseDotEnvFile(path) {
+  if (!existsSync(path)) {
+    return {};
+  }
+
+  const content = readFileSync(path, "utf8");
+  const parsed = {};
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    let value = line.slice(separatorIndex + 1).trim();
+
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    parsed[key] = value;
+  }
+
+  return parsed;
+}
+
+const rootEnvPath = resolve(rootDir, ".env");
+const serviceEnvPath = resolve(serviceDir, ".env");
+const mergedEnv = {
+  ...process.env,
+  ...parseDotEnvFile(rootEnvPath),
+  ...parseDotEnvFile(serviceEnvPath),
+};
 
 function runOrThrow(command, commandArgs, options = {}) {
   const result = spawnSync(command, commandArgs, {
@@ -86,6 +129,7 @@ function runServer(venvPython) {
       cwd: serviceDir,
       stdio: "inherit",
       shell: false,
+      env: mergedEnv,
     },
   );
 

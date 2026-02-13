@@ -13,7 +13,7 @@ Personal web app for Arabic (MSA) and Mandarin (Simplified) with a progressive c
 - Prisma + SQLite
 - JWT cookie auth (single-user)
 - Zod validation
-- Local speech worker: FastAPI + faster-whisper + local-only TTS
+- Local speech worker: FastAPI + faster-whisper + pluggable TTS
 
 ## Quick Start
 
@@ -38,7 +38,11 @@ Speech defaults are now:
 ```env
 WHISPER_MODEL="small"
 WHISPER_MODEL_ZH="tiny"
-LOCAL_TTS_BACKEND="auto" # auto | qwen | artst
+LOCAL_TTS_BACKEND="auto" # auto | qwen | artst | elevenlabs
+ELEVENLABS_API_KEY=""
+ELEVENLABS_AR_VOICE_ID=""
+ELEVENLABS_MODEL_ID="eleven_multilingual_v2"
+ELEVENLABS_TIMEOUT_SECONDS="20"
 ```
 
 Debug-only transcript scoring path (disabled by default):
@@ -73,9 +77,9 @@ STT behavior:
 
 TTS behavior:
 
-- model-only local backends (`qwen` for Mandarin, `artst` for Arabic)
-- `LOCAL_TTS_BACKEND=auto` selects model by language with no fallback chain
-- no cloud fallback
+- local backends (`qwen` for Mandarin, `artst` for Arabic)
+- optional ElevenLabs backend for Arabic (`ELEVENLABS_API_KEY` + `ELEVENLABS_AR_VOICE_ID`)
+- `LOCAL_TTS_BACKEND=auto` routes `zh` -> `qwen`, and `ar` -> `elevenlabs` (with fallback to `artst` if configured credentials fail)
 
 ## Local Runtime Prerequisites
 
