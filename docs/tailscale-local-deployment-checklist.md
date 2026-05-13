@@ -141,6 +141,71 @@ http://<tailscale-ip>:3000
 - [ ] Confirm target TTS audio works over HTTPS.
 - [ ] Confirm speech scoring works or fails with a clear local-service error.
 
+## Tailscale Serve Operations
+
+Tailscale Serve is the private HTTPS proxy for the Next.js app. It is different from Tailscale Funnel:
+
+1. Serve: private to approved Tailnet devices.
+2. Funnel: public internet access.
+
+Use Serve for this app. Do not use Funnel unless the deployment goal changes.
+
+Current expected URL shape:
+
+```text
+https://<windows-device-name>.<tailnet-name>.ts.net
+```
+
+Example from the current Windows PC:
+
+```text
+https://desktop-5g1a8u5.tail811073.ts.net
+```
+
+Check current Serve status:
+
+```powershell
+& "C:\Program Files\Tailscale\tailscale.exe" serve status
+```
+
+Turn Serve on for the app:
+
+```powershell
+& "C:\Program Files\Tailscale\tailscale.exe" serve --bg --yes 3000
+```
+
+This proxies private HTTPS traffic from Tailscale to the local app at:
+
+```text
+http://127.0.0.1:3000
+```
+
+Turn Serve off:
+
+```powershell
+& "C:\Program Files\Tailscale\tailscale.exe" serve --https=443 off
+```
+
+Reset all Serve config on this machine:
+
+```powershell
+& "C:\Program Files\Tailscale\tailscale.exe" serve reset
+```
+
+Useful checks after turning Serve on:
+
+```powershell
+curl.exe https://<windows-device-name>.<tailnet-name>.ts.net
+curl.exe https://<windows-device-name>.<tailnet-name>.ts.net/api/pronunciation/target-audio?lexicalItemId=<id>
+```
+
+If the app is not reachable over HTTPS, confirm:
+
+1. Tailscale is connected on the Windows PC.
+2. Tailscale HTTPS Certificates are enabled in the admin DNS settings.
+3. The Next.js app is running on port `3000`.
+4. `tailscale serve status` shows a proxy to `http://127.0.0.1:3000`.
+
 ## Auto-Start Option
 
 Use Windows Task Scheduler, a Windows service wrapper, or the per-user Startup folder after manual verification works.
