@@ -16,10 +16,19 @@ Windows PC
   -> local image assets and generated content
 
 Tailscale
-  -> private remote access from approved devices
+  -> private HTTPS remote access from approved devices
 ```
 
 Do not expose the speech service publicly. Keep `LOCAL_SPEECH_URL=http://127.0.0.1:8001`.
+Use Tailscale Serve for the Next.js app only. Do not use Tailscale Funnel for the default deployment.
+
+For iPhone and other mobile browsers, prefer the HTTPS Serve URL because microphone APIs require a secure context:
+
+```text
+https://<windows-device-name>.<tailnet-name>.ts.net
+```
+
+Plain HTTP over Tailscale can load the page, but speech recording may be blocked by the browser.
 
 ## Inputs Needed
 
@@ -31,6 +40,8 @@ Do not expose the speech service publicly. Keep `LOCAL_SPEECH_URL=http://127.0.0
 - [ ] Confirm the Windows PC is signed into the correct Tailnet.
 - [ ] Confirm the Windows PC Tailscale device name or MagicDNS hostname.
 - [ ] Confirm access should be Tailscale-only, not public Funnel.
+- [ ] Enable HTTPS Certificates in the Tailscale admin DNS settings.
+- [ ] Confirm the private Tailscale Serve HTTPS URL.
 - [ ] Decide run mode:
   - [ ] Manual start.
   - [ ] Auto-start after reboot.
@@ -48,6 +59,7 @@ Do not expose the speech service publicly. Keep `LOCAL_SPEECH_URL=http://127.0.0
 - [ ] Install Tailscale.
 - [ ] Sign into Tailscale.
 - [ ] Enable MagicDNS in Tailscale admin if not already enabled.
+- [ ] Enable HTTPS Certificates in Tailscale admin.
 - [ ] Verify the PC is reachable from another Tailscale device.
 
 ## App Setup
@@ -57,6 +69,7 @@ Do not expose the speech service publicly. Keep `LOCAL_SPEECH_URL=http://127.0.0
 - [ ] Create `C:\language-learning-config`.
 - [ ] Create production env file under `C:\language-learning-config`.
 - [ ] Set `DATABASE_URL` to a SQLite file under `C:\language-learning-data`.
+  - [ ] For this repo layout on Windows, Prisma resolves SQLite paths relative to `prisma/schema.prisma`; `file:../../language-learning-data/prod.db` points to `C:\language-learning-data\prod.db` when the app is at `C:\language-learning-mvp`.
 - [ ] Set `LOCAL_SPEECH_URL=http://127.0.0.1:8001`.
 - [ ] Install Node dependencies with `npm install`.
 - [ ] Run Prisma migration with `npm run db:migrate`.
@@ -87,7 +100,7 @@ npm run dev
 ```
 
 - [ ] Open `http://localhost:3000` on the Windows PC.
-- [ ] Log in.
+- [ ] Confirm the dashboard loads without login.
 - [ ] Open `/zh`.
 - [ ] Confirm Image Vocab appears.
 - [ ] Reveal and grade an image vocab card.
@@ -104,22 +117,33 @@ npm run dev
 http://<windows-device-name>:3000
 ```
 
+- [ ] For mobile speech features, enable Tailscale Serve and use:
+
+```powershell
+tailscale serve --bg --yes 3000
+```
+
+```text
+https://<windows-device-name>.<tailnet-name>.ts.net
+```
+
 - [ ] If MagicDNS is unavailable, use the Windows PC Tailscale IP:
 
 ```text
 http://<tailscale-ip>:3000
 ```
 
-- [ ] Confirm login works from the remote device.
+- [ ] Confirm dashboard loads without login from the remote device.
 - [ ] Confirm `/zh` loads from the remote device.
 - [ ] Confirm `/ar` loads from the remote device.
 - [ ] Confirm image assets load remotely.
-- [ ] Confirm microphone permission works from the remote device browser.
+- [ ] Confirm microphone permission works from the remote device browser over HTTPS.
+- [ ] Confirm target TTS audio works over HTTPS.
 - [ ] Confirm speech scoring works or fails with a clear local-service error.
 
 ## Auto-Start Option
 
-Use Windows Task Scheduler or a Windows service wrapper after manual verification works.
+Use Windows Task Scheduler, a Windows service wrapper, or the per-user Startup folder after manual verification works.
 
 - [ ] Add app start task.
 - [ ] Add speech service start task.
@@ -150,10 +174,11 @@ Use Windows Task Scheduler or a Windows service wrapper after manual verificatio
 
 - [ ] App starts on the Windows PC.
 - [ ] Speech service starts on the Windows PC.
-- [ ] App is reachable from another approved Tailscale device.
-- [ ] Login works remotely.
+- [ ] App is reachable from another approved Tailscale device over HTTPS.
+- [ ] Dashboard loads remotely without login.
 - [ ] Arabic and Mandarin pages work remotely.
 - [ ] Image Vocab works remotely.
 - [ ] Speech health is visible in the app.
+- [ ] TTS and microphone speech scoring work from iPhone/mobile over HTTPS.
 - [ ] App and speech service can restart after reboot or with one documented command.
 - [ ] Backups are configured for app data and secrets.

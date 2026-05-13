@@ -42,7 +42,7 @@ This keeps transcript scoring from being biased toward expected answers.
 ## Runtime Topology
 
 1. Browser records utterance and posts multipart form to `POST /api/pronunciation/evaluate` with `form=msa|syrian`.
-2. Next.js route validates auth/limits and resolves lexical target.
+2. Next.js route resolves the local single-user record, validates limits, and resolves lexical target.
 3. Route calls local speech worker `POST /score`.
 4. Worker returns `{ transcript, score, feedback, confidence, components }`.
 5. Next.js stores attempt and returns response to UI.
@@ -90,6 +90,18 @@ ELEVENLABS_MODEL_ID="eleven_multilingual_v2"
 ELEVENLABS_TIMEOUT_SECONDS="20"
 ```
 
+## Mobile and Tailscale HTTPS
+
+Remote mobile access should use Tailscale Serve over HTTPS:
+
+```text
+https://<windows-device-name>.<tailnet-name>.ts.net
+```
+
+The speech worker must still bind only to `127.0.0.1:8001`; Next.js proxies scoring and synthesis through authenticated app routes. Do not expose the speech worker directly through Tailscale Serve or Funnel.
+
+iOS Safari requires a secure context for `navigator.mediaDevices.getUserMedia`. Plain `http://<device>:3000` may load the app but microphone recording and speech scoring can fail or appear unavailable.
+
 ## Benchmark Procedure
 
 1. Copy `scripts/benchmark/smoke-set.sample.json` to `scripts/benchmark/smoke-set.json`.
@@ -109,7 +121,8 @@ npm run speech:benchmark
 ## Operational Checks
 
 1. `curl http://127.0.0.1:8001/health`
-2. `curl http://localhost:3000/api/pronunciation/health` (auth required)
-3. `npm run lint`
-4. `npm run typecheck`
-5. `npm run build`
+2. `curl http://localhost:3000/api/pronunciation/health`
+3. `curl https://<windows-device-name>.<tailnet-name>.ts.net/api/pronunciation/target-audio?lexicalItemId=<id>`
+4. `npm run lint`
+5. `npm run typecheck`
+6. `npm run build`

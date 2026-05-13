@@ -11,7 +11,7 @@ Personal web app for Arabic (MSA) and Mandarin (Simplified) with a progressive c
 
 - Next.js (App Router, TypeScript)
 - Prisma + SQLite
-- JWT cookie auth (single-user)
+- Local single-user mode with auth disabled by default
 - Zod validation
 - Local speech worker: FastAPI + faster-whisper + pluggable TTS
 
@@ -27,7 +27,27 @@ npm run dev:all
 
 Open `http://localhost:3000`.
 
-First login creates the single user account if none exists yet.
+The app auto-creates or reuses the first local user record. There is no login screen in the local-first deployment mode.
+
+## Private Tailscale Deployment
+
+The first deployment target is an always-on Windows PC reached privately through Tailscale:
+
+```text
+C:\language-learning-mvp     app checkout
+C:\language-learning-data    SQLite production data
+C:\language-learning-config  production env and startup scripts
+```
+
+The app listens on `0.0.0.0:3000`, while the speech service stays local-only on `127.0.0.1:8001`.
+
+For iPhone/mobile speech features, use the private HTTPS Tailscale Serve URL rather than plain HTTP. iOS browsers require HTTPS for microphone APIs:
+
+```text
+https://<windows-device-name>.<tailnet-name>.ts.net
+```
+
+Do not enable Tailscale Funnel for the default deployment. Funnel makes the app publicly reachable; Tailscale Serve keeps it private to approved Tailnet devices.
 
 ## Environment Variables
 
@@ -156,10 +176,12 @@ npm run image-vocab:chunks -- --manifest data/image-vocab-batch.zh_hans.json
 - Language schedule alternates by day (Arabic and Chinese).
 - New content pauses automatically when review backlog exceeds 50 due cards.
 - Mastery requires 5+ successful recalls across at least 7 days.
+- API routes still resolve a `User` record internally so existing progress tables stay scoped by `userId`, but browser login is bypassed for local single-user use.
 
 ## Project Documentation
 
 - Local model stack and runtime details: `docs/local-models.md`
 - Short-term improvement plan: `docs/roadmap-2weeks.md`
 - Bilingual conversation and image vocab product plan: `docs/bilingual-conversation-image-vocab-plan.md`
+- Tailscale local deployment checklist: `docs/tailscale-local-deployment-checklist.md`
 - Latest benchmark report: `docs/benchmark-baseline.md`
