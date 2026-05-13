@@ -11,6 +11,9 @@ type SessionPayload = {
   email: string;
 };
 
+const LOCAL_USER_EMAIL = "local-user@language-learning.local";
+const LOCAL_USER_PASSWORD_HASH = "auth-disabled";
+
 const encoder = new TextEncoder();
 const secret = encoder.encode(process.env.SESSION_SECRET ?? "dev-only-session-secret");
 
@@ -71,6 +74,27 @@ export function clearSessionCookie(response: NextResponse) {
 }
 
 export async function requireUser(request: NextRequest) {
+  void request;
+
+  const existingUser = await db.user.findFirst({
+    orderBy: { createdAt: "asc" },
+    select: { id: true, email: true, createdAt: true },
+  });
+
+  if (existingUser) {
+    return existingUser;
+  }
+
+  return db.user.create({
+    data: {
+      email: LOCAL_USER_EMAIL,
+      passwordHash: LOCAL_USER_PASSWORD_HASH,
+    },
+    select: { id: true, email: true, createdAt: true },
+  });
+}
+
+export async function requireSessionUser(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value;
 
   if (!token) {

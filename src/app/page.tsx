@@ -45,13 +45,8 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 export default function MainDashboard() {
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
-  
-  const [email, setEmail] = useState("you@example.com");
-  const [password, setPassword] = useState("");
   
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [todaySession, setTodaySession] = useState<TodaySession | null>(null);
@@ -68,16 +63,9 @@ export default function MainDashboard() {
 
       setProgress(progressRes);
       setTodaySession(sessionRes);
-      setAuthenticated(true);
     } catch (caught) {
       const apiError = caught as ApiError;
-      if (apiError.status === 401) {
-        setAuthenticated(false);
-        setProgress(null);
-        setTodaySession(null);
-      } else {
-        setError(apiError.message ?? "Could not load dashboard.");
-      }
+      setError(apiError.message ?? "Could not load dashboard.");
     } finally {
       setLoading(false);
     }
@@ -86,38 +74,6 @@ export default function MainDashboard() {
   useEffect(() => {
     void bootstrap();
   }, [bootstrap]);
-
-  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-
-    try {
-      await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      }).then(readJson<{ user: { id: string; email: string } }>);
-
-      setPassword("");
-      await bootstrap();
-      setInfo("Logged in.");
-    } catch (caught) {
-      const apiError = caught as ApiError;
-      setError(apiError.message ?? "Login failed.");
-    }
-  }
-
-  async function handleLogout() {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      setAuthenticated(false);
-      setProgress(null);
-      setTodaySession(null);
-      setInfo("Logged out.");
-    } catch {
-      setError("Logout failed.");
-    }
-  }
 
   const arStats = progress?.languageStats.ar_msa;
   const zhStats = progress?.languageStats.zh_hans;
@@ -137,62 +93,11 @@ export default function MainDashboard() {
     );
   }
 
-  if (!authenticated) {
-    return (
-      <div className="mx-auto flex max-w-lg items-center py-12 page-transition">
-        <div className="w-full rounded-3xl border border-slate-300 bg-white p-8 shadow-xl shadow-slate-200/70">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Language Learning</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Master Arabic and Chinese with spaced repetition.
-          </p>
-
-          <form className="mt-6 space-y-3" onSubmit={handleLogin}>
-            <label className="block text-sm text-slate-700">
-              Email
-              <input
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-0 focus:border-emerald-500"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                required
-              />
-            </label>
-
-            <label className="block text-sm text-slate-700">
-              Password
-              <input
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-0 focus:border-emerald-500"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                type="password"
-                minLength={8}
-                required
-              />
-            </label>
-
-            <button
-              className="mt-2 w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
-              type="submit"
-            >
-              Sign in
-            </button>
-          </form>
-
-          {error ? <p className="mt-3 text-sm text-rose-700">{error}</p> : null}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="page-transition">
         {error && (
           <div className="mb-4 rounded-xl bg-rose-100 px-4 py-2 text-sm text-rose-800">{error}</div>
         )}
-        {info && (
-          <div className="mb-4 rounded-xl bg-emerald-100 px-4 py-2 text-sm text-emerald-900">{info}</div>
-        )}
-
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -209,12 +114,6 @@ export default function MainDashboard() {
               onClick={() => void bootstrap()}
             >
               Refresh
-            </button>
-            <button
-              className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-800 hover:border-slate-500"
-              onClick={handleLogout}
-            >
-              Logout
             </button>
           </div>
         </div>
