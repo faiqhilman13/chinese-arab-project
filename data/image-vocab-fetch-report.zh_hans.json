@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-05-13T13:47:36.378Z",
+  "sourceManifest": "data/image-vocab-batch.zh_hans.json",
+  "language": "zh_hans",
+  "accepted": [
+    {
+      "conceptKey": "shared.home.water",
+      "gloss": "water",
+      "result": "created",
+      "localPath": "/image-vocab/scraped/shared.home.water/water-80ee5b8f622d.jpg",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File%3AStaatl._Fachingen_2x.jpg",
+      "width": 960,
+      "height": 1630,
+      "qualityScore": 88
+    }
+  ],
+  "skipped": [
+    {
+      "conceptKey": "shared.transport.station",
+      "gloss": "station",
+      "reason": "no accepted image candidate",
+      "searchQuery": "train station clear object photograph"
+    }
+  ]
+}

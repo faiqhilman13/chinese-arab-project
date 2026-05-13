@@ -76,6 +76,25 @@ export const flashcardGradeSchema = z.object({
   grade: z.enum(Object.keys(API_GRADE_TO_DB) as ["again", "hard", "good", "easy"]),
 });
 
+export const imageVocabQueueQuerySchema = z.object({
+  language: languageSchema,
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+});
+
+export const badImageReportSchema = z.object({
+  imageAssetId: z.string().cuid(),
+  lexicalItemId: z.string().cuid().optional(),
+  reason: z.string().trim().min(1).max(240).optional(),
+});
+
+export const imageVocabGradeSchema = z.object({
+  lexicalItemId: z.string().cuid(),
+  imageAssetId: z.string().cuid(),
+  reviewCardId: z.string().cuid().nullable().optional(),
+  grade: z.enum(Object.keys(API_GRADE_TO_DB) as ["again", "hard", "good", "easy"]),
+  stage: z.enum(["recognition", "spoken_recall", "production", "chunk_use"]),
+});
+
 export const reminderSchema = z.object({
   enabled: z.boolean(),
   localTime: z

@@ -151,6 +151,40 @@ type FlashcardsResponse = {
   cards: Flashcard[];
 };
 
+type ImageVocabStage = "recognition" | "spoken_recall" | "production" | "chunk_use";
+
+type ImageVocabCard = {
+  lexicalItemId: string;
+  reviewCardId: string | null;
+  imageAssetId: string;
+  imageUrl: string;
+  imageLabel: string;
+  conceptKey: string;
+  domain: string;
+  scriptText: string;
+  transliteration: string | null;
+  gloss: string;
+  state: "new" | "learning" | "review" | "mastered";
+  isDue: boolean;
+  stage: ImageVocabStage;
+  forms?: {
+    primary: {
+      scriptText: string;
+      transliteration: string | null;
+    };
+    secondary: {
+      scriptText: string;
+      transliteration: string | null;
+    } | null;
+  } | null;
+};
+
+type ImageVocabResponse = {
+  language: LanguageCode;
+  dueCount: number;
+  cards: ImageVocabCard[];
+};
+
 type PronunciationTarget = {
   lexicalItemId: string;
   scriptText: string;
@@ -465,6 +499,13 @@ function formatImmersionMode(mode: ImmersionMode): string {
   return "Tutor";
 }
 
+function formatImageVocabStage(stage: ImageVocabStage): string {
+  if (stage === "recognition") return "Recognition";
+  if (stage === "spoken_recall") return "Spoken recall";
+  if (stage === "production") return "Production";
+  return "Chunk use";
+}
+
 const scoreByGrade = {
   again: 30,
   hard: 60,
@@ -541,6 +582,11 @@ export function LanguageWorkspace({
   const [revealed, setRevealed] = useState(false);
   const [showSyrianCompanion, setShowSyrianCompanion] = useState(false);
   const [sessionSeen, setSessionSeen] = useState(0);
+  const [imageVocabCards, setImageVocabCards] = useState<ImageVocabCard[]>([]);
+  const [imageVocabDueCount, setImageVocabDueCount] = useState(0);
+  const [activeImageVocabLexicalItemId, setActiveImageVocabLexicalItemId] = useState<string | null>(null);
+  const [imageVocabRevealed, setImageVocabRevealed] = useState(false);
+  const [imageVocabSeen, setImageVocabSeen] = useState(0);
   const prefetchedAudioIdsRef = useRef<Set<string>>(new Set());
 
   const langStats = useMemo(() => {
@@ -572,6 +618,29 @@ export function LanguageWorkspace({
 
     return flashcards.findIndex((card) => card.lexicalItemId === currentCard.lexicalItemId);
   }, [flashcards, currentCard]);
+
+  const currentImageVocabCard = useMemo(() => {
+    if (imageVocabCards.length === 0) {
+      return null;
+    }
+
+    if (activeImageVocabLexicalItemId) {
+      const active = imageVocabCards.find((card) => card.lexicalItemId === activeImageVocabLexicalItemId);
+      if (active) {
+        return active;
+      }
+    }
+
+    return imageVocabCards[0];
+  }, [activeImageVocabLexicalItemId, imageVocabCards]);
+
+  const activeImageVocabIndex = useMemo(() => {
+    if (!currentImageVocabCard) {
+      return -1;
+    }
+
+    return imageVocabCards.findIndex((card) => card.lexicalItemId === currentImageVocabCard.lexicalItemId);
+  }, [currentImageVocabCard, imageVocabCards]);
 
   const currentNoHarakatItem = useMemo(() => {
     if (!isArabic || noHarakatQueue.length === 0) {
@@ -808,6 +877,26 @@ export function LanguageWorkspace({
     [languageCode],
   );
 
+  const loadImageVocab = useCallback(
+    async (preferredLexicalItemId?: string) => {
+      const result = await fetch(`/api/image-vocab/queue?language=${languageCode}&limit=12`).then(
+        readJson<ImageVocabResponse>,
+      );
+
+      setImageVocabCards(result.cards);
+      setImageVocabDueCount(result.dueCount);
+      setActiveImageVocabLexicalItemId((current) => {
+        const preferred = preferredLexicalItemId ?? current;
+        if (preferred && result.cards.some((card) => card.lexicalItemId === preferred)) {
+          return preferred;
+        }
+
+        return result.cards[0]?.lexicalItemId ?? null;
+      });
+    },
+    [languageCode],
+  );
+
   const bootstrap = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -834,6 +923,7 @@ export function LanguageWorkspace({
       const work: Array<Promise<unknown>> = [
         fetch("/api/pronunciation/health").then(readJson<LocalSpeechHealth>),
         loadFlashcards(),
+        loadImageVocab(),
       ];
 
       if (isArabic) {
@@ -866,6 +956,7 @@ export function LanguageWorkspace({
     isArabic,
     languageCode,
     loadFlashcards,
+    loadImageVocab,
     immersionEnabled,
     loadImmersionPlan,
     loadImmersionSummary,
@@ -927,6 +1018,12 @@ export function LanguageWorkspace({
   }, [currentCard]);
 
   useEffect(() => {
+    if (currentImageVocabCard) {
+      setActiveImageVocabLexicalItemId(currentImageVocabCard.lexicalItemId);
+    }
+  }, [currentImageVocabCard]);
+
+  useEffect(() => {
     if (currentNoHarakatItem) {
       setActiveNoHarakatLexicalItemId(currentNoHarakatItem.lexicalItemId);
     }
@@ -967,6 +1064,10 @@ export function LanguageWorkspace({
     setRevealed(false);
     setShowSyrianCompanion(false);
   }, [activeLexicalItemId]);
+
+  useEffect(() => {
+    setImageVocabRevealed(false);
+  }, [activeImageVocabLexicalItemId]);
 
   useEffect(() => {
     setPredictedTransliteration("");
@@ -1047,6 +1148,90 @@ export function LanguageWorkspace({
   function focusFlashcard(lexicalItemId: string) {
     setActiveLexicalItemId(lexicalItemId);
     setRevealed(false);
+  }
+
+  function moveImageVocabCard(offset: -1 | 1) {
+    if (imageVocabCards.length === 0 || activeImageVocabIndex < 0) {
+      return;
+    }
+
+    const nextIndex = (activeImageVocabIndex + offset + imageVocabCards.length) % imageVocabCards.length;
+    setActiveImageVocabLexicalItemId(imageVocabCards[nextIndex].lexicalItemId);
+  }
+
+  const gradeCurrentImageVocabCard = useCallback(
+    async (grade: Grade) => {
+      if (!currentImageVocabCard || !imageVocabRevealed) {
+        return;
+      }
+
+      setBusy(true);
+      setError(null);
+
+      const nextCardId =
+        imageVocabCards[(activeImageVocabIndex + 1 + imageVocabCards.length) % imageVocabCards.length]
+          ?.lexicalItemId;
+
+      try {
+        await fetch("/api/image-vocab/grade", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lexicalItemId: currentImageVocabCard.lexicalItemId,
+            imageAssetId: currentImageVocabCard.imageAssetId,
+            reviewCardId: currentImageVocabCard.reviewCardId,
+            grade,
+            stage: currentImageVocabCard.stage,
+          }),
+        }).then(readJson<{ reviewCard: { id: string } }>);
+
+        setImageVocabSeen((count) => count + 1);
+        setInfo(`Image vocab recorded ${grade.toUpperCase()} (${scoreByGrade[grade]}).`);
+        await Promise.all([loadImageVocab(nextCardId), loadFlashcards()]);
+      } catch (caught) {
+        const apiError = caught as ApiError;
+        setError(apiError.message ?? "Could not grade image vocab card.");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [
+      activeImageVocabIndex,
+      currentImageVocabCard,
+      imageVocabCards,
+      imageVocabRevealed,
+      loadFlashcards,
+      loadImageVocab,
+    ],
+  );
+
+  async function reportBadImage(card: ImageVocabCard) {
+    setBusy(true);
+    setError(null);
+
+    const nextCardId =
+      imageVocabCards[(activeImageVocabIndex + 1 + imageVocabCards.length) % imageVocabCards.length]
+        ?.lexicalItemId;
+
+    try {
+      await fetch("/api/image-vocab/report-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lexicalItemId: card.lexicalItemId,
+          imageAssetId: card.imageAssetId,
+          reason: "bad image from study card",
+        }),
+      }).then(readJson<{ report: { id: string } }>);
+
+      setInfo("Bad image reported. Removed it from active image vocab.");
+      await loadImageVocab(nextCardId);
+    } catch (caught) {
+      const apiError = caught as ApiError;
+      setError(apiError.message ?? "Could not report image.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -1713,6 +1898,9 @@ export function LanguageWorkspace({
             No-Harakat Drill
           </a>
         ) : null}
+        <a href="#image-vocab" className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-slate-700">
+          Image Vocab
+        </a>
         <a href="#flashcards" className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-slate-700">
           Flashcards
         </a>
@@ -1724,7 +1912,7 @@ export function LanguageWorkspace({
         </a>
       </div>
 
-      <section className="mb-6 grid gap-4 sm:grid-cols-4">
+      <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Mastered</p>
           <p className={`mt-1 text-2xl font-semibold ${accentTextClass}`}>{langStats?.mastered ?? 0}</p>
@@ -1732,6 +1920,11 @@ export function LanguageWorkspace({
         <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Due now</p>
           <p className="mt-1 text-2xl font-semibold text-rose-600">{flashcardDueCount}</p>
+        </article>
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Image vocab</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">{imageVocabCards.length}</p>
+          <p className="text-xs text-slate-500">{imageVocabDueCount} due</p>
         </article>
         <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Avg score</p>
@@ -2217,6 +2410,144 @@ export function LanguageWorkspace({
           ) : null}
         </section>
       ) : null}
+
+      <section id="image-vocab" className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-900">Image Vocab</h2>
+          <p className="text-sm text-slate-600">
+            Due: {imageVocabDueCount} | Seen: {imageVocabSeen} | Ready: {imageVocabCards.length}
+          </p>
+        </div>
+
+        {!currentImageVocabCard ? (
+          <p className="text-sm text-slate-600">
+            No image vocab cards are ready yet. Run `npm run data:seed:images` after migrations to seed the first image set.
+          </p>
+        ) : (
+          <>
+            <article className="grid gap-5 rounded-2xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={currentImageVocabCard.imageUrl}
+                  alt={currentImageVocabCard.imageLabel}
+                  className="aspect-[4/3] h-full w-full object-cover"
+                />
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-wider text-slate-500">
+                  {currentImageVocabCard.domain} | {currentImageVocabCard.state} |{" "}
+                  {formatImageVocabStage(currentImageVocabCard.stage)}
+                </p>
+                <p className="mt-2 text-sm text-slate-700">{currentImageVocabCard.imageLabel}</p>
+
+                {imageVocabRevealed ? (
+                  <div className="mt-4 space-y-2">
+                    <p className={`text-4xl font-medium text-slate-900 ${languageClassName}`}>
+                      {primaryFormOf(currentImageVocabCard).scriptText}
+                    </p>
+                    <p className="text-sm text-slate-600">
+                      {primaryFormOf(currentImageVocabCard).transliteration ?? "-"}
+                    </p>
+                    {isArabic && secondaryFormOf(currentImageVocabCard) ? (
+                      <p className="text-sm text-emerald-700">
+                        Syrian: {secondaryFormOf(currentImageVocabCard)?.scriptText} (
+                        {secondaryFormOf(currentImageVocabCard)?.transliteration ?? "-"})
+                      </p>
+                    ) : null}
+                    <p className="text-lg text-slate-900">{currentImageVocabCard.gloss}</p>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-slate-500">Recall the word from the image, then reveal.</p>
+                )}
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-800 hover:border-slate-600"
+                    onClick={() => setImageVocabRevealed(true)}
+                    disabled={busy || imageVocabRevealed}
+                    type="button"
+                  >
+                    Reveal
+                  </button>
+                  <button
+                    className={accentPlayClass}
+                    disabled={busy}
+                    onClick={() => void playTargetAudio(currentImageVocabCard, "msa")}
+                    type="button"
+                  >
+                    {isArabic ? "Play MSA" : "Play"}
+                  </button>
+                  {isArabic ? (
+                    <button
+                      className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-900 hover:border-emerald-500 disabled:opacity-60"
+                      disabled={busy || !secondaryFormOf(currentImageVocabCard)}
+                      onClick={() => void playTargetAudio(currentImageVocabCard, "syrian")}
+                      type="button"
+                    >
+                      Play Syrian
+                    </button>
+                  ) : null}
+                  <button
+                    className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-900 hover:border-amber-500 disabled:opacity-60"
+                    disabled={busy || !voiceReady || !localSpeech?.available}
+                    onClick={() => void runVoiceDrill(currentImageVocabCard, "msa")}
+                    type="button"
+                  >
+                    {activeVoiceCardId === `${currentImageVocabCard.lexicalItemId}:msa`
+                      ? "Recording..."
+                      : isArabic
+                        ? "Speak MSA"
+                        : "Speak"}
+                  </button>
+                  <button
+                    className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs text-rose-900 hover:border-rose-500 disabled:opacity-60"
+                    disabled={busy}
+                    onClick={() => void reportBadImage(currentImageVocabCard)}
+                    type="button"
+                  >
+                    Bad image
+                  </button>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(["again", "hard", "good", "easy"] as const).map((grade) => (
+                    <button
+                      key={grade}
+                      className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-800 hover:border-slate-600 disabled:opacity-60"
+                      disabled={busy || !imageVocabRevealed}
+                      onClick={() => void gradeCurrentImageVocabCard(grade)}
+                      type="button"
+                    >
+                      {grade}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </article>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-800 hover:border-slate-600"
+                onClick={() => moveImageVocabCard(-1)}
+                disabled={busy || imageVocabCards.length < 2}
+                type="button"
+              >
+                Previous
+              </button>
+              <button
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs text-slate-800 hover:border-slate-600"
+                onClick={() => moveImageVocabCard(1)}
+                disabled={busy || imageVocabCards.length < 2}
+                type="button"
+              >
+                Next
+              </button>
+            </div>
+          </>
+        )}
+      </section>
 
       <section id="flashcards" className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">

@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-05-13T13:47:36.378Z",
+  "sourceManifest": "data/image-vocab-batch.ar_msa.json",
+  "language": "ar_msa",
+  "accepted": [
+    {
+      "conceptKey": "shared.emergencies.fire",
+      "gloss": "fire",
+      "result": "created",
+      "localPath": "/image-vocab/scraped/shared.emergencies.fire/fire-0d9de1a4a4f3.jpg",
+      "sourcePageUrl": "https://commons.wikimedia.org/wiki/File%3AToronto_clear_blue_sky%2C_highlighting_Yorkville_firehouse_gjb.jpg",
+      "width": 960,
+      "height": 1280,
+      "qualityScore": 85
+    }
+  ],
+  "skipped": [
+    {
+      "conceptKey": "shared.emergencies.ambulance",
+      "gloss": "ambulance",
+      "reason": "no accepted image candidate",
+      "searchQuery": "ambulance clear object photograph"
+    },
+    {
+      "conceptKey": "shared.emergencies.accident",
+      "gloss": "accident",
+      "reason": "no accepted image candidate",
+      "searchQuery": "accident clear object photograph"
+    },
+    {
+      "conceptKey": "shared.emergencies.phone-number",
+      "gloss": "phone number",
+      "reason": "no accepted image candidate",
+      "searchQuery": "phone number clear object photograph"
+    },
+    {
+      "conceptKey": "shared.emergencies.address",
+      "gloss": "address",
+      "reason": "no accepted image candidate",
+      "searchQuery": "address clear object photograph"
+    },
+    {
+      "conceptKey": "shared.emergencies.id-card",
+      "gloss": "ID card",
+      "reason": "no accepted image candidate",
+      "searchQuery": "ID card clear object photograph"
+    },
+    {
+      "conceptKey": "shared.emergencies.safe",
+      "gloss": "safe",
+      "reason": "no accepted image candidate",
+      "searchQuery": "safe clear object photograph"
+    },
+    {
+      "conceptKey": "shared.emergencies.unsafe",
+      "gloss": "unsafe",
+      "reason": "no accepted image candidate",
+      "searchQuery": "unsafe clear object photograph"
+    },
+    {
+      "conceptKey": "shared.emergencies.problem",
+      "gloss": "problem",
+      "reason": "Commons search failed: 429 Too Many Requests"
+    },
+    {
+      "conceptKey": "shared.emergencies.urgent",
+      "gloss": "urgent",
+      "reason": "Commons search failed: 429 Too Many Requests"
+    },
+    {
+      "conceptKey": "shared.emergencies.earthquake",
+      "gloss": "earthquake",
+      "reason": "Commons search failed: 429 Too Many Requests"
+    },
+    {
+      "conceptKey": "shared.emergencies.flood",
+      "gloss": "flood",
+      "reason": "Commons search failed: 429 Too Many Requests"
+    }
+  ]
+}

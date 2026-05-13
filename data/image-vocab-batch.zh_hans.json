@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-05-13T13:43:08.502Z",
+  "language": "zh_hans",
+  "limit": 12,
+  "purpose": "image-vocab-daily-prep",
+  "notes": [
+    "This scaffold selects concepts that do not yet have active image assets.",
+    "A later scraper should turn searchQuery values into downloaded ImageAsset rows."
+  ],
+  "concepts": [
+    {
+      "lexicalItemId": "cmlk56lbk0013oa360jq05m31",
+      "conceptKey": "shared.home.water",
+      "lexicalConceptKey": "zh.home.vocab.water",
+      "domain": "home",
+      "scriptText": "水",
+      "transliteration": "shui",
+      "gloss": "water",
+      "searchQuery": "glass of water clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlk56lbn001doa36cyp672sd",
+      "conceptKey": "shared.transport.station",
+      "lexicalConceptKey": "zh.transport.vocab.station",
+      "domain": "transport",
+      "scriptText": "车站",
+      "transliteration": "chezhan",
+      "gloss": "station",
+      "searchQuery": "train station clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    }
+  ]
+}

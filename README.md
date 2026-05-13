@@ -121,6 +121,10 @@ Generate + validate before seeding:
 npm run data:generate:ar
 npm run data:enrich:ar
 npm run data:validate:ar
+npm run data:seed:images
+npm run image-vocab:prepare -- --language zh_hans --limit 12
+npm run image-vocab:fetch -- --manifest data/image-vocab-batch.zh_hans.json
+npm run image-vocab:chunks -- --manifest data/image-vocab-batch.zh_hans.json
 ```
 
 ## API Routes
@@ -138,6 +142,9 @@ npm run data:validate:ar
 - `GET /api/pronunciation/no-harakat/target-audio?lexicalItemId=...`
 - `GET /api/review/queue?language=...`
 - `POST /api/review/grade`
+- `GET /api/image-vocab/queue?language=ar_msa|zh_hans&limit=12`
+- `POST /api/image-vocab/grade`
+- `POST /api/image-vocab/report-image`
 - `GET /api/progress/summary?range=7d|30d`
 - `GET /api/curriculum/domains`
 - `GET /api/lesson/:id`
@@ -154,4 +161,5 @@ npm run data:validate:ar
 
 - Local model stack and runtime details: `docs/local-models.md`
 - Short-term improvement plan: `docs/roadmap-2weeks.md`
+- Bilingual conversation and image vocab product plan: `docs/bilingual-conversation-image-vocab-plan.md`
 - Latest benchmark report: `docs/benchmark-baseline.md`

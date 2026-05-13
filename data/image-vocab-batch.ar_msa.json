@@ -1,0 +1,156 @@
+{
+  "generatedAt": "2026-05-13T13:43:08.308Z",
+  "language": "ar_msa",
+  "limit": 12,
+  "purpose": "image-vocab-daily-prep",
+  "notes": [
+    "This scaffold selects concepts that do not yet have active image assets.",
+    "A later scraper should turn searchQuery values into downloaded ImageAsset rows."
+  ],
+  "concepts": [
+    {
+      "lexicalItemId": "cmlkrth9p00e5oavhxldiiplm",
+      "conceptKey": "shared.emergencies.fire",
+      "lexicalConceptKey": "ar.emergencies.vocab.fire",
+      "domain": "emergencies",
+      "scriptText": "حريق",
+      "transliteration": "hryq",
+      "gloss": "fire",
+      "searchQuery": "fire clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlkrth9q00eboavhayhghdoi",
+      "conceptKey": "shared.emergencies.ambulance",
+      "lexicalConceptKey": "ar.emergencies.vocab.ambulance",
+      "domain": "emergencies",
+      "scriptText": "إسعاف",
+      "transliteration": "isaaf",
+      "gloss": "ambulance",
+      "searchQuery": "ambulance clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3m6036noaztl1xf4mgi",
+      "conceptKey": "shared.emergencies.accident",
+      "lexicalConceptKey": "ar.emergencies.vocab.accident",
+      "domain": "emergencies",
+      "scriptText": "حادث",
+      "transliteration": "hadth",
+      "gloss": "accident",
+      "searchQuery": "accident clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3mg037loazt2kg3xbf4",
+      "conceptKey": "shared.emergencies.phone-number",
+      "lexicalConceptKey": "ar.emergencies.vocab.phone_number",
+      "domain": "emergencies",
+      "scriptText": "رقم الهاتف",
+      "transliteration": "rqm alhatf",
+      "gloss": "phone number",
+      "searchQuery": "phone number clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3mi037roazt695ncsld",
+      "conceptKey": "shared.emergencies.address",
+      "lexicalConceptKey": "ar.emergencies.vocab.address",
+      "domain": "emergencies",
+      "scriptText": "عنوان",
+      "transliteration": "anwan",
+      "gloss": "address",
+      "searchQuery": "address clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3mj037xoazt6wa5bc4e",
+      "conceptKey": "shared.emergencies.id-card",
+      "lexicalConceptKey": "ar.emergencies.vocab.id_card",
+      "domain": "emergencies",
+      "scriptText": "بطاقة هوية",
+      "transliteration": "btaqa hwya",
+      "gloss": "ID card",
+      "searchQuery": "ID card clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3mn0387oaztewouimzw",
+      "conceptKey": "shared.emergencies.safe",
+      "lexicalConceptKey": "ar.emergencies.vocab.safe",
+      "domain": "emergencies",
+      "scriptText": "آمن",
+      "transliteration": "aamn",
+      "gloss": "safe",
+      "searchQuery": "safe clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3mo038doaztdxr7west",
+      "conceptKey": "shared.emergencies.unsafe",
+      "lexicalConceptKey": "ar.emergencies.vocab.unsafe",
+      "domain": "emergencies",
+      "scriptText": "غير آمن",
+      "transliteration": "ghyr aamn",
+      "gloss": "unsafe",
+      "searchQuery": "unsafe clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3mq038joazt5e1xmi7x",
+      "conceptKey": "shared.emergencies.problem",
+      "lexicalConceptKey": "ar.emergencies.vocab.problem",
+      "domain": "emergencies",
+      "scriptText": "مشكلة",
+      "transliteration": "mshkla",
+      "gloss": "problem",
+      "searchQuery": "problem clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3ms038poazthlkf4u67",
+      "conceptKey": "shared.emergencies.urgent",
+      "lexicalConceptKey": "ar.emergencies.vocab.urgent",
+      "domain": "emergencies",
+      "scriptText": "عاجل",
+      "transliteration": "aajl",
+      "gloss": "urgent",
+      "searchQuery": "urgent clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3mt038voaztjyq261ki",
+      "conceptKey": "shared.emergencies.earthquake",
+      "lexicalConceptKey": "ar.emergencies.vocab.earthquake",
+      "domain": "emergencies",
+      "scriptText": "زلزال",
+      "transliteration": "zlzal",
+      "gloss": "earthquake",
+      "searchQuery": "earthquake clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    },
+    {
+      "lexicalItemId": "cmlksb3mv0391oaztoal8tmn2",
+      "conceptKey": "shared.emergencies.flood",
+      "lexicalConceptKey": "ar.emergencies.vocab.flood",
+      "domain": "emergencies",
+      "scriptText": "فيضان",
+      "transliteration": "fydan",
+      "gloss": "flood",
+      "searchQuery": "flood clear object photograph",
+      "badImageReports": 0,
+      "imageVocabAttempts": 0
+    }
+  ]
+}

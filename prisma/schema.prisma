@@ -68,6 +68,19 @@ enum SnippetRegister {
   MIXED
 }
 
+enum ImageAssetStatus {
+  ACTIVE
+  REPORTED
+  RETIRED
+}
+
+enum ImageVocabStage {
+  RECOGNITION
+  SPOKEN_RECALL
+  PRODUCTION
+  CHUNK_USE
+}
+
 model User {
   id                    String                 @id @default(cuid())
   email                 String                 @unique
@@ -81,6 +94,8 @@ model User {
   attemptLogs           AttemptLog[]
   pronunciationAttempts PronunciationAttempt[]
   noHarakatAttempts     NoHarakatAttempt[]
+  badImageReports       BadImageReport[]
+  imageVocabAttempts    ImageVocabAttempt[]
   dailySessions         DailySession[]
   reminderPref          ReminderPref?
 }
@@ -116,6 +131,8 @@ model LexicalItem {
   attemptLogs           AttemptLog[]
   pronunciationAttempts PronunciationAttempt[]
   noHarakatAttempts     NoHarakatAttempt[]
+  badImageReports       BadImageReport[]
+  imageVocabAttempts    ImageVocabAttempt[]
   snippetLinks          SnippetLexicalLink[]
   morphologyEntries     MorphologyEntry[]
   morphologyAttempts    MorphologyAttempt[]
@@ -282,6 +299,65 @@ model GeneratedVariant {
   lexicalItem   LexicalItem  @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
 
   @@index([lexicalItemId, createdAt])
+}
+
+model ImageAsset {
+  id            String             @id @default(cuid())
+  conceptKey    String
+  label         String
+  sourceUrl     String
+  sourcePageUrl String?
+  sourceDomain  String?
+  localPath     String
+  contentHash   String?
+  width         Int?
+  height        Int?
+  qualityScore  Int                @default(70)
+  status        ImageAssetStatus   @default(ACTIVE)
+  reportCount   Int                @default(0)
+  lastUsedAt    DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  reports       BadImageReport[]
+  attempts      ImageVocabAttempt[]
+
+  @@index([conceptKey, status, qualityScore])
+  @@index([sourceDomain])
+  @@index([contentHash])
+}
+
+model BadImageReport {
+  id            String      @id @default(cuid())
+  userId        String
+  imageAssetId  String
+  lexicalItemId String?
+  reason        String?
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageAsset    ImageAsset  @relation(fields: [imageAssetId], references: [id], onDelete: Cascade)
+  lexicalItem   LexicalItem? @relation(fields: [lexicalItemId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([imageAssetId, createdAt])
+  @@index([lexicalItemId, createdAt])
+}
+
+model ImageVocabAttempt {
+  id            String          @id @default(cuid())
+  userId        String
+  lexicalItemId String
+  imageAssetId  String?
+  stage         ImageVocabStage @default(RECOGNITION)
+  grade         ReviewGrade?
+  score         Int
+  createdAt     DateTime        @default(now())
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lexicalItem   LexicalItem     @relation(fields: [lexicalItemId], references: [id], onDelete: Cascade)
+  imageAsset    ImageAsset?     @relation(fields: [imageAssetId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([userId, lexicalItemId, createdAt])
+  @@index([imageAssetId, createdAt])
 }
 
 model ImmersionLog {

@@ -15,6 +15,10 @@
     "data:generate:ar": "node ./scripts/generate-ar-dataset.mjs",
     "data:enrich:ar": "node ./scripts/enrich-ar-pronunciation-fields.mjs",
     "data:validate:ar": "node ./scripts/validate-ar-dataset.mjs",
+    "data:seed:images": "node ./scripts/seed-image-vocab-assets.mjs",
+    "image-vocab:prepare": "node ./scripts/prepare-image-vocab-batch.mjs",
+    "image-vocab:fetch": "node ./scripts/fetch-image-vocab-candidates.mjs",
+    "image-vocab:chunks": "node ./scripts/generate-image-vocab-chunks.mjs",
     "speech:dev": "node ./scripts/speech-dev.mjs",
     "speech:benchmark": "node ./scripts/benchmark-speech.mjs --dataset scripts/benchmark/smoke-set.json --out docs/benchmark-baseline.md"
   },
